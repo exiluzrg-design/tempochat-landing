@@ -125,7 +125,7 @@
       <div class="card">
         <div class="chat-wrap" id="chat">
           <div class="chat-header">
-            <div class="badge">Demo en vivo (sin backend)</div>
+            <div class="badge">Beta conectada al backend</div>
             <span class="tag">⏱ 10′ por sesión</span>
           </div>
 
@@ -157,69 +157,37 @@
     </footer>
   </div>
 
-  <script>
-    const chat = document.getElementById('chatBox');
-    const input = document.getElementById('msgInput');
+ <script>
+  // Referencias al DOM
+  const chat = document.getElementById('chatBox');
+  const input = document.getElementById('msgInput');
 
-    function scrollToChat(){
-      document.getElementById('chat').scrollIntoView({behavior:'smooth', block:'start'});
-      input.focus();
-    }
+  function scrollToChat(){
+    document.getElementById('chat').scrollIntoView({behavior:'smooth', block:'start'});
+    input.focus();
+  }
 
-    function addMsg(text, role='bot', typing=false){
-      const el = document.createElement('div');
-      el.className = 'msg ' + (role === 'me' ? 'me' : 'bot') + (typing ? ' typing' : '');
-      el.innerHTML = text + `<span class="time">${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>`;
-      chat.appendChild(el);
-      chat.scrollTop = chat.scrollHeight;
-      return el;
-    }
+  function addMsg(text, role='bot', typing=false){
+    const el = document.createElement('div');
+    el.className = 'msg ' + (role === 'me' ? 'me' : 'bot') + (typing ? ' typing' : '');
+    el.innerHTML = text + `<span class="time">${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>`;
+    chat.appendChild(el);
+    chat.scrollTop = chat.scrollHeight;
+    return el;
+  }
 
-    function sendQuick(txt){
-      input.value = txt;
-      handleSend();
-    }
+  function sendQuick(txt){
+    input.value = txt;
+    handleSend();
+  }
 
-    function handleSend(){
-      const text = input.value.trim();
-      if(!text) return;
-      addMsg(escapeHtml(text), 'me');
-      input.value = '';
+  function escapeHtml(str){
+    return str.replace(/[&<>"']/g, m => (
+      { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[m]
+    ));
+  }
 
-      // Simular "escribiendo…"
-      const typingEl = addMsg('Escribiendo…', 'bot', true);
-
-      // DEMO: lógica simple de respuesta
-      setTimeout(() => {
-        typingEl.remove();
-        const reply = demoReply(text);
-        addMsg(reply, 'bot');
-      }, 650);
-    }
-
-    // TODO: integrar backend real aquí
-    // Ejemplo:
-    // async function handleSend(){
-    //   const text = input.value.trim();
-    //   if(!text) return;
-    //   addMsg(escapeHtml(text), 'me');
-    //   input.value = '';
-    //   const typingEl = addMsg('Escribiendo…', 'bot', true);
-    //   try {
-    //     const res = await fetch('/api/chat', {
-    //       method:'POST',
-    //       headers:{'Content-Type':'application/json'},
-    //       body:JSON.stringify({message:text, sessionSeconds:600})
-    //     });
-    //     const data = await res.json();
-    //     typingEl.remove();
-    //     addMsg(escapeHtml(data.reply || '…'), 'bot');
-    //   } catch(e){
-    //     typingEl.remove();
-    //     addMsg('Perdón, hubo un problema de conexión. Probá de nuevo en unos segundos.', 'bot');
-    //   }
-
-    <script>
+  // ---------- Backend (sesión de 10′ + chat) ----------
   let sessionToken = null;
 
   async function ensureSession(){
@@ -232,9 +200,11 @@
 
   async function handleSend(){
     const text = input.value.trim();
-    if(!text) return;
+    if (!text) return;
+
     addMsg(escapeHtml(text), 'me');
     input.value = '';
+
     const typingEl = addMsg('Escribiendo…', 'bot', true);
     try {
       await ensureSession();
@@ -245,6 +215,7 @@
       });
       const j = await r.json();
       typingEl.remove();
+
       if (j.error) {
         if (j.error === 'session_expired') sessionToken = null; // pedimos nueva en el próximo envío
         addMsg(escapeHtml(j.message || 'Error'), 'bot');
@@ -256,35 +227,10 @@
       addMsg('Perdón, hubo un problema de conexión. Probá de nuevo.', 'bot');
     }
   }
+
+  // Footer año
+  document.getElementById('year').textContent = new Date().getFullYear();
 </script>
 
-    function demoReply(text){
-      const t = text.toLowerCase();
-      if(t.includes('ansio') || t.includes('nerv')) {
-        return 'Gracias por contarlo. Probemos algo breve ahora mismo: inhalá en 4, retené 4, exhalá en 6. Repetí 3 veces. ¿Querés que hagamos un plan de 10 minutos para bajar la ansiedad?';
-      }
-      if(t.includes('dorm') || t.includes('sueñ')) {
-        return 'El sueño puede mejorar con rutinas simples. ¿Cómo fue tu última hora antes de dormir? Si querés, armamos una mini higiene del sueño en 4 pasos para esta noche.';
-      }
-      if(t.includes('discus') || t.includes('pelea') || t.includes('enojo')){
-        return 'Es normal quedar removido después de una discusión. ¿Preferís desahogarte primero o buscar una frase para reparar cuando estés listo?';
-      }
-      if(t.includes('soltar') || t.includes('triste') || t.includes('dolor')) {
-        return 'Te leo. Podemos hacer un ejercicio breve: nombrar la emoción, ubicarla en el cuerpo y darle un permiso. Si te sirve, lo guiamos juntos ahora.';
-      }
-      if(t.includes('precio') || t.includes('pagar') || t.includes('mercado pago')) {
-        return 'Pronto vas a poder iniciar sesiones de 10 minutos con pago seguro por Mercado Pago. Por ahora, esta es una demo gratuita.';
-      }
-      return 'Estoy con vos. Contame un poco más: ¿qué te preocupa hoy y qué te gustaría que cambie en los próximos 10 minutos?';
-    }
-
-    function escapeHtml(str){
-      return str.replace(/[&<>"']/g, m => (
-        { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[m]
-      ));
-    }
-
-    document.getElementById('year').textContent = new Date().getFullYear();
-  </script>
 </body>
 </html>
