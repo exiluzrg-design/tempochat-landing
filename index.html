@@ -157,7 +157,7 @@
     </footer>
   </div>
 
- <script>
+<script>
   // Referencias al DOM
   const chat = document.getElementById('chatBox');
   const input = document.getElementById('msgInput');
@@ -187,14 +187,33 @@
     ));
   }
 
+  // ---------- Helper robusto de fetch JSON ----------
+  async function fetchJson(url, options){
+    const res = await fetch(url, options);
+    const txt = await res.text();           // leemos texto SIEMPRE
+    try {
+      const data = txt ? JSON.parse(txt) : {};
+      if (!res.ok) throw Object.assign(new Error(data.message || res.statusText), {status: res.status, data});
+      return data;
+    } catch (e) {
+      // si no era JSON válido, incluimos el HTML en el error
+      if (!res.ok) throw Object.assign(new Error(txt || res.statusText), {status: res.status});
+      // respuesta 200 pero cuerpo no-JSON (no debería pasar), devolvemos texto
+      return { raw: txt };
+    }
+  }
+
   // ---------- Backend (sesión de 10′ + chat) ----------
   let sessionToken = null;
 
   async function ensureSession(){
     if (sessionToken) return sessionToken;
-    const r = await fetch('/api/new-session', { method: 'POST' });
-    const j = await r.json();
-    if (j.sessionToken) sessionToken = j.sessionToken;
+
+    // IMPORTANTE: probá en tu dominio de Production (www.tempochat.com.ar)
+    // Si estás en una URL de Preview, asegurate de tener la env var también en Preview.
+    const j = await fetchJson('/api/new-session', { method: 'POST' });
+    if (!j.sessionToken) throw new Error(j.message || 'No se pudo crear la sesión');
+    sessionToken = j.sessionToken;
     return sessionToken;
   }
 
@@ -207,23 +226,27 @@
 
     const typingEl = addMsg('Escribiendo…', 'bot', true);
     try {
-      await ensureSession();
-      const r = await fetch('/api/chat', {
+      await ensureSession();                        // crea token si falta
+      if (!sessionToken) throw new Error('Sin token de sesión');
+
+      const j = await fetchJson('/api/chat', {
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ message: text, sessionToken })
       });
-      const j = await r.json();
+
       typingEl.remove();
 
       if (j.error) {
-        if (j.error === 'session_expired') sessionToken = null; // pedimos nueva en el próximo envío
+        if (j.error === 'session_expired') sessionToken = null; // se renueva en el próximo envío
         addMsg(escapeHtml(j.message || 'Error'), 'bot');
         return;
       }
+
       addMsg(escapeHtml(j.reply || '…'), 'bot');
     } catch(e){
       typingEl.remove();
+      console.error(e);
       addMsg('Perdón, hubo un problema de conexión. Probá de nuevo.', 'bot');
     }
   }
@@ -231,6 +254,7 @@
   // Footer año
   document.getElementById('year').textContent = new Date().getFullYear();
 </script>
+
 
 </body>
 </html>
