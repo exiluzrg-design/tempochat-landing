@@ -193,10 +193,23 @@
     }
   }
 
-  // ---- Sesiones y timer ----
-  let sessionToken = null;
+  // ---- Sesión y timer (sin /api/new-session) ----
+  let sessionId = null;        // id estable en cliente
   let remaining = 0;
   let timerId = null;
+
+  function getOrCreateSessionId() {
+    if (!sessionId) {
+      const stored = localStorage.getItem('tc_session');
+      if (stored && stored.length >= 8) {
+        sessionId = stored;
+      } else {
+        sessionId = 's_' + Date.now().toString(36) + Math.random().toString(36).slice(2);
+        localStorage.setItem('tc_session', sessionId);
+      }
+    }
+    return sessionId;
+  }
 
   function fmt(sec){
     const m = Math.floor(sec/60).toString().padStart(2,'0');
@@ -205,7 +218,7 @@
   }
 
   function startTimer(sec){
-    remaining = sec;
+    remaining = typeof sec === 'number' ? sec : 600;
     const tag = document.querySelector('.tag');
     clearInterval(timerId);
     timerId = setInterval(() => {
@@ -213,22 +226,11 @@
       if (tag) tag.textContent = `⏱ ${fmt(remaining)} restantes`;
       if (remaining <= 0) {
         clearInterval(timerId);
-        sessionToken = null;
-        input.disabled = true;
+        // No bloqueamos el input: permitimos “escribir para renovar”
+        input.disabled = false;
         input.placeholder = 'La sesión terminó. Escribí para renovar.';
       }
     }, 1000);
-  }
-
-  async function ensureSession(){
-    if (sessionToken && remaining > 0) return sessionToken;
-    const j = await fetchJson('/api/new-session', { method: 'POST' });
-    if (!j.sessionToken) throw new Error(j.message || 'No se pudo crear la sesión');
-    sessionToken = j.sessionToken;
-    startTimer(j.expiresIn ?? 600);
-    input.disabled = false;
-    input.placeholder = 'Escribí acá… (Enter para enviar)';
-    return sessionToken;
   }
 
   async function handleSend(){
@@ -240,26 +242,42 @@
 
     const typingEl = addMsg('Escribiendo…', 'bot', true);
     try {
-      await ensureSession();
-      if (!sessionToken) throw new Error('Sin token de sesión');
+      // Si no hay sesión viva, generamos una nueva automáticamente
+      const id = getOrCreateSessionId();
+
+      const payload = {
+        message: text,
+        // Enviamos AMBOS nombres por compatibilidad de backend
+        sessionId: id,
+        sessionToken: id
+      };
 
       const j = await fetchJson('/api/chat', {
         method:'POST',
         headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ message: text, sessionToken })
+        body: JSON.stringify(payload)
       });
 
       typingEl.remove();
 
       if (j.error) {
-        if (j.error === 'session_expired') sessionToken = null;
         addMsg(escapeHtml(j.message || 'Error'), 'bot');
         return;
       }
 
-      if (typeof j.remainingSeconds === 'number') {
-        startTimer(j.remainingSeconds);
+      // Si el backend devuelve un nuevo id, lo adoptamos
+      if (j.sessionId && j.sessionId !== sessionId) {
+        sessionId = j.sessionId;
+        localStorage.setItem('tc_session', sessionId);
       }
+
+      // Timer: soporta remainingSeconds (viejo) o ttl (nuevo). Fallback: 600
+      const secs = (typeof j.remainingSeconds === 'number')
+        ? j.remainingSeconds
+        : (typeof j.ttl === 'number' ? j.ttl : 600);
+
+      startTimer(secs);
+      input.disabled = false; // por las dudas, re-habilitamos
 
       addMsg(escapeHtml(j.reply || '…'), 'bot');
     } catch(e){
