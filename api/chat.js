@@ -2,7 +2,7 @@
 import jwt from 'jsonwebtoken';
 
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
-const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4.1';
 
 function ok(res, data) { return res.status(200).json(data); }
 function bad(res, code, msg, status = 400) { return res.status(status).json({ error: code, message: msg }); }
