@@ -2,235 +2,251 @@
 <html lang="es">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>TempoChat — 10 minutos de claridad, privados y 24/7</title>
-  <meta name="description" content="Sesiones privadas de 10 minutos. Sin registro, 24/7. Pagás y entrás al chat. TempoChat: tu momento de claridad."/>
-  <meta property="og:title" content="TempoChat — 10 minutos de claridad" />
-  <meta property="og:description" content="Sesiones privadas, efímeras y sin registro. Pagás y entrás al chat." />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://tempochat.com.ar" />
-  <meta property="og:image" content="/og-tempochat.png" />
-  <link rel="icon" href="/favicon.ico" />
-  <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TempoChat — 10 minutos, privados, 24/7</title>
+  <meta name="description" content="Sesiones de chat de 10 minutos, privadas, sin registros. Acompañamiento emocional y espiritual 24/7.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23000'/%3E%3Ctext x='32' y='40' text-anchor='middle' font-size='28' fill='%23fff' font-family='Arial'%3ET%3C/text%3E%3C/svg%3E">
   <style>
-    /* fuente base elegante sin dependencias */
-    :root { color-scheme: dark; }
-    @media (prefers-color-scheme: light) {
-      :root { color-scheme: light dark; }
+    :root{
+      --bg:#0b0c10; --card:#14161b; --muted:#8a93a6; --text:#e9edf5;
+      --brand:#61dafb; --accent:#a7f3d0; --danger:#ff6b6b;
+      --ring:rgba(97,218,251,.35);
     }
-    body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
-    .grad { background: radial-gradient(1200px 600px at 50% -10%, rgba(139,92,246,.25), transparent 60%), radial-gradient(800px 400px at 0% 10%, rgba(244,114,182,.12), transparent 60%), linear-gradient(180deg, #0a0a0b, #000); }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; background:radial-gradient(1200px 700px at 20% -10%, #18202b 0%, #0b0c10 55%), #0b0c10;
+      color:var(--text); font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;
+      -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+    }
+    a{color:var(--brand); text-decoration:none}
+    .container{max-width:1100px; margin:0 auto; padding:28px 18px}
+    header{
+      display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:18px;
+    }
+    .logo{
+      display:flex; align-items:center; gap:12px; font-weight:700; letter-spacing:.3px; font-size:18px;
+    }
+    .badge{font-size:12px; color:var(--muted); border:1px solid #2a2f3a; padding:6px 10px; border-radius:999px}
+    .hero{
+      display:grid; grid-template-columns:1.1fr .9fr; gap:28px; align-items:center;
+    }
+    @media (max-width:960px){ .hero{grid-template-columns:1fr} }
+    .card{
+      background:linear-gradient(180deg, #161a22 0%, #13161c 100%);
+      border:1px solid #1f2430; border-radius:18px; padding:22px; box-shadow:0 10px 30px rgba(0,0,0,.25);
+    }
+    .glow{box-shadow:0 0 0 1px #223042, 0 0 0 6px var(--ring);}
+    h1{font-size:40px; line-height:1.1; margin:6px 0 12px}
+    .sub{color:var(--muted); font-size:16px; line-height:1.6}
+    .chips{display:flex; flex-wrap:wrap; gap:10px; margin-top:14px}
+    .chip{background:#10131a; border:1px solid #222838; padding:8px 12px; border-radius:999px; font-size:13px; color:#c7d2fe}
+    .cta{display:flex; gap:12px; margin-top:18px; flex-wrap:wrap}
+    .btn{
+      cursor:pointer; border:1px solid #2a2f3a; background:#0f1116; color:var(--text);
+      padding:12px 16px; border-radius:12px; font-weight:600; transition:.15s transform ease, .15s background;
+    }
+    .btn:hover{transform:translateY(-1px); background:#12161e}
+    .btn.primary{background:linear-gradient(180deg, #1a75ff, #0053cc); border-color:#0a4ec4}
+    .btn.primary:hover{filter:brightness(1.05)}
+    .trust{
+      display:flex; gap:12px; align-items:center; margin-top:10px; color:var(--muted); font-size:13px;
+    }
+    .dot{width:7px; height:7px; border-radius:50%; background:var(--accent)}
+    /* Chat */
+    .chat-wrap{display:flex; flex-direction:column; gap:12px}
+    .chat-header{display:flex; align-items:center; justify-content:space-between; margin-bottom:4px}
+    .tag{font-size:12px; color:#a3e635; background:#0f1a0e; border:1px solid #1b2e17; padding:6px 10px; border-radius:999px}
+    .chat{
+      display:flex; flex-direction:column; gap:12px; height:480px; overflow:auto; padding:12px;
+      background:#0f1218; border:1px solid #1f2430; border-radius:14px;
+    }
+    .msg{max-width:80%; padding:10px 12px; border-radius:12px; line-height:1.45; font-size:14px}
+    .me{align-self:flex-end; background:#15334a; border:1px solid #1f4b6a}
+    .bot{align-self:flex-start; background:#141922; border:1px solid #263043}
+    .time{display:block; margin-top:6px; color:var(--muted); font-size:11px}
+    .typing{opacity:.8; font-style:italic}
+    .composer{
+      display:flex; gap:10px; margin-top:10px
+    }
+    .input{
+      flex:1; padding:12px 14px; border-radius:12px; border:1px solid #2a2f3a; background:#0f1116; color:var(--text);
+      outline:none;
+    }
+    .input:focus{border-color:#2d66ff; box-shadow:0 0 0 4px rgba(45,102,255,.15)}
+    .quick{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px}
+    .quick button{
+      border:1px solid #2a2f3a; background:#10131a; color:#cbd5e1; padding:8px 10px; border-radius:10px; font-size:12px; cursor:pointer;
+    }
+    footer{color:var(--muted); font-size:12px; margin:28px 0 12px; text-align:center}
+    .tiny{font-size:11px; opacity:.85}
   </style>
 </head>
-<body class="grad text-zinc-100 selection:bg-violet-600/40">
-  <header class="max-w-4xl mx-auto px-5 py-6 flex items-center justify-between">
-    <div class="text-lg tracking-wide font-semibold">Tempo<span class="text-violet-300">Chat</span></div>
-    <nav class="hidden sm:flex items-center gap-6 text-sm text-zinc-400">
-      <a href="#como" class="hover:text-zinc-200">Cómo funciona</a>
-      <a href="#por-que" class="hover:text-zinc-200">Por qué</a>
-      <a href="#faq" class="hover:text-zinc-200">FAQ</a>
-    </nav>
-  </header>
-
-  <main class="max-w-4xl mx-auto px-5 pb-24">
-    <!-- Hero -->
-    <section class="pt-6 sm:pt-14 text-center">
-      <h1 class="text-3xl sm:text-5xl font-semibold leading-tight">
-        Tu sesión privada de <span class="text-violet-300">10 minutos</span>,
-        disponible <span class="text-violet-300">24/7</span>
-      </h1>
-      <p class="mt-3 sm:mt-4 text-zinc-300 max-w-2xl mx-auto">Sin registro. Pagás y entrás al chat. Un espacio efímero para preguntar lo que quieras: amor, trabajo, decisiones, sueños. Lo que pasa en la sesión, queda en la sesión.</p>
-
-      <div class="mt-7 flex flex-col sm:flex-row items-center justify-center gap-3">
-        <!-- Reemplazá el href con tu Link de Pago/Checkout Pro de Mercado Pago -->
-        <a href="https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=REEMPLAZAR_PREF_ID" class="px-6 py-3 rounded-xl bg-violet-600 hover:bg-violet-500 font-medium">Reservar sesión 10′ — $3.000 ARS</a>
-        <a href="#como" class="px-6 py-3 rounded-xl bg-zinc-900/70 ring-1 ring-zinc-800 hover:bg-zinc-800">Cómo funciona</a>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">
+        <svg width="28" height="28" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+          <circle cx="32" cy="32" r="28" fill="#111827" stroke="#1f2937" stroke-width="2"></circle>
+          <path d="M20 40h24M22 24h20" stroke="#61dafb" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+        TempoChat
+        <span class="badge">Privado · Sin registros · 24/7</span>
       </div>
+      <div class="badge">AR · SSL activo</div>
+    </header>
 
-      <div class="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3 text-left max-w-3xl mx-auto">
-        <div class="rounded-2xl bg-zinc-900/60 ring-1 ring-zinc-800 p-4"><div class="text-sm text-zinc-400">Diferencial</div><div class="mt-1 font-medium">Sin registro</div></div>
-        <div class="rounded-2xl bg-zinc-900/60 ring-1 ring-zinc-800 p-4"><div class="text-sm text-zinc-400">Privacidad</div><div class="mt-1 font-medium">No guardamos el chat</div></div>
-        <div class="rounded-2xl bg-zinc-900/60 ring-1 ring-zinc-800 p-4"><div class="text-sm text-zinc-400">Disponibilidad</div><div class="mt-1 font-medium">24 horas, 7 días</div></div>
-        <div class="rounded-2xl bg-zinc-900/60 ring-1 ring-zinc-800 p-4"><div class="text-sm text-zinc-400">Foco</div><div class="mt-1 font-medium">10′ intensivos</div></div>
-      </div>
-    </section>
+    <section class="hero">
+      <div class="card glow">
+        <h1>10 minutos para ordenar la cabeza.</h1>
+        <p class="sub">
+          Acompañamiento emocional y espiritual, en chat, cuando lo necesitás.
+          <br />Sin cuentas. Sin historial. <strong>Privado por diseño.</strong>
+        </p>
 
-    <!-- Cómo funciona -->
-    <section id="como" class="mt-16">
-      <h2 class="text-xl font-semibold">Cómo funciona</h2>
-      <ol class="mt-4 grid sm:grid-cols-3 gap-4 text-sm">
-        <li class="rounded-2xl bg-zinc-900/60 ring-1 ring-zinc-800 p-4">
-          <div class="font-medium">1) Pagás tu sesión</div>
-          <p class="mt-1 text-zinc-300">Checkout con Mercado Pago. Sin cuentas ni contraseñas.</p>
-        </li>
-        <li class="rounded-2xl bg-zinc-900/60 ring-1 ring-zinc-800 p-4">
-          <div class="font-medium">2) Entrás al chat</div>
-          <p class="mt-1 text-zinc-300">Acceso inmediato con un enlace. El reloj empieza a correr.</p>
-        </li>
-        <li class="rounded-2xl bg-zinc-900/60 ring-1 ring-zinc-800 p-4">
-          <div class="font-medium">3) 10 minutos de claridad</div>
-          <p class="mt-1 text-zinc-300">Preguntás lo que quieras. Al terminar, podés extender 10′ más.</p>
-        </li>
-      </ol>
-    </section>
-
-    <!-- Por qué -->
-    <section id="por-que" class="mt-16">
-      <h2 class="text-xl font-semibold">¿Por qué TempoChat?</h2>
-      <div class="mt-4 grid sm:grid-cols-2 gap-4 text-sm">
-        <div class="rounded-2xl bg-zinc-900/60 ring-1 ring-zinc-800 p-4">
-          <div class="font-medium">Privado y efímero</div>
-          <p class="mt-1 text-zinc-300">No pedimos datos personales y no guardamos el contenido de la sesión. Lo que vivís queda entre vos y tu momento.</p>
+        <div class="chips">
+          <span class="chip">🔒 Sin registro</span>
+          <span class="chip">🧠 Escucha activa</span>
+          <span class="chip">⏱ Sesiones de 10′</span>
+          <span class="chip">🌙 Disponible 24/7</span>
         </div>
-        <div class="rounded-2xl bg-zinc-900/60 ring-1 ring-zinc-800 p-4">
-          <div class="font-medium">Guía cálida</div>
-          <p class="mt-1 text-zinc-300">Tono humano, espiritual y psicológico. Sin tecnicismos fríos. Sin juicios.</p>
+
+        <div class="cta">
+          <a class="btn primary" href="#chat">Empezar ahora</a>
+          <button class="btn" onclick="scrollToChat()">¿Cómo funciona?</button>
+        </div>
+
+        <div class="trust">
+          <span class="dot"></span>
+          <span>Conexión cifrada · No guardamos tus conversaciones</span>
         </div>
       </div>
-    </section>
 
-    <!-- FAQ -->
-    <section id="faq" class="mt-16">
-      <h2 class="text-xl font-semibold">Preguntas frecuentes</h2>
-      <div class="mt-4 grid gap-3 text-sm">
-        <details class="rounded-2xl bg-zinc-900/60 ring-1 ring-zinc-800 p-4">
-          <summary class="font-medium cursor-pointer">¿Necesito crear una cuenta?</summary>
-          <p class="mt-2 text-zinc-300">No. Pagás y accedés directo. Sin registro, sin contraseñas.</p>
-        </details>
-        <details class="rounded-2xl bg-zinc-900/60 ring-1 ring-zinc-800 p-4">
-          <summary class="font-medium cursor-pointer">¿Qué temas puedo consultar?</summary>
-          <p class="mt-2 text-zinc-300">Amor, trabajo, decisiones, ansiedad, sueños, bloqueos, motivación. Si aparece un tema sensible (daño propio/ajeno), priorizamos tu seguridad y te orientamos a ayuda profesional.</p>
-        </details>
-        <details class="rounded-2xl bg-zinc-900/60 ring-1 ring-zinc-800 p-4">
-          <summary class="font-medium cursor-pointer">¿Guardan mi conversación?</summary>
-          <p class="mt-2 text-zinc-300">No. Procesamos tu chat en tránsito para responderte y después se descarta. Solo registramos lo mínimo para operar el servicio (tiempo, pago).</p>
-        </details>
-      </div>
-    </section>
-      
-    <!-- Chat con contador (se muestra cuando hay ?session=TOKEN en la URL) -->
-    <section id="chat" class="hidden pt-10">
-      <div class="max-w-2xl mx-auto">
-        <div class="flex items-center justify-between mb-3">
-          <div class="text-sm text-zinc-400">Tiempo restante</div>
-          <div class="flex items-center gap-3">
-            <button id="extend" class="px-3 py-1.5 text-sm rounded-xl bg-violet-600 hover:bg-violet-500">Extender 10′</button>
-            <div id="timer" class="text-2xl font-semibold text-violet-300">10:00</div>
+      <div class="card">
+        <div class="chat-wrap" id="chat">
+          <div class="chat-header">
+            <div class="badge">Demo en vivo (sin backend)</div>
+            <span class="tag">⏱ 10′ por sesión</span>
           </div>
-        </div>
 
-        <div id="chatBox" class="h-[60vh] min-h-[420px] overflow-y-auto rounded-2xl bg-zinc-900/60 ring-1 ring-zinc-800 p-4 space-y-3"></div>
+          <div class="chat" id="chatBox" aria-live="polite">
+            <div class="msg bot">
+              Hola, soy Tempo. Estoy para acompañarte. ¿Qué te gustaría conversar hoy?
+              <span class="time">IA de acompañamiento · Demo</span>
+            </div>
+          </div>
 
-        <div class="mt-3 flex gap-2">
-          <input id="chatInput" type="text" placeholder="Escribí tu pregunta…" class="flex-1 bg-zinc-900/80 border border-zinc-800 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-600"/>
-          <button id="sendBtn" class="rounded-xl bg-violet-600 hover:bg-violet-500 px-3 py-2 text-sm">Enviar</button>
+          <div class="composer">
+            <input id="msgInput" class="input" type="text" placeholder="Escribí acá… (Enter para enviar)" autocomplete="off" />
+            <button class="btn primary" onclick="handleSend()">Enviar</button>
+          </div>
+          <div class="quick">
+            <button onclick="sendQuick('Me siento ansioso hoy')">Ansiedad</button>
+            <button onclick="sendQuick('No logro dormir bien')">Sueño</button>
+            <button onclick="sendQuick('Tuve una discusión y me dejó mal')">Discusión</button>
+            <button onclick="sendQuick('Necesito soltar y estar en paz')">Soltar</button>
+          </div>
+          <p class="tiny">⚠️ Demo: respuestas simuladas. Próximamente integración con backend y pagos.</p>
         </div>
-        <p class="mt-2 text-[11px] text-zinc-500">Las lecturas son simbólicas y no sustituyen ayuda profesional. Si estás en riesgo, buscá ayuda inmediata.</p>
       </div>
     </section>
 
-  </main>
-
-  <footer class="border-t border-zinc-900/70">
-    <div class="max-w-4xl mx-auto px-5 py-8 text-xs text-zinc-400">
-      <div>© <span id="y"></span> TempoChat — Sesiones privadas de 10 minutos.</div>
-      <div class="mt-2">Aviso: las lecturas son simbólicas y orientativas. No sustituyen ayuda profesional médica, psicológica ni legal. Si estás en riesgo, buscá ayuda inmediata.</div>
-    </div>
-  </footer>
+    <footer>
+      © <span id="year"></span> TempoChat — Hecho en Argentina. <br/>
+      <span class="tiny">Privacidad por diseño · Sin tracking de terceros.</span>
+    </footer>
+  </div>
 
   <script>
-(()=>{
-  // Año del footer
-  const yEl = document.getElementById('y');
-  if (yEl) yEl.textContent = new Date().getFullYear();
+    const chat = document.getElementById('chatBox');
+    const input = document.getElementById('msgInput');
 
-  // --- Vista Chat si viene con ?session=TOKEN (o demo con ?demo=1) ---
-  const qs = new URLSearchParams(location.search);
-  const sessionToken = qs.get('session'); // tu backend debería poner acá un JWT válido
-  const minutesParam = parseInt(qs.get('m') || '10', 10);
+    function scrollToChat(){
+      document.getElementById('chat').scrollIntoView({behavior:'smooth', block:'start'});
+      input.focus();
+    }
 
-  const chatSec = document.getElementById('chat');
-  const chatBox = document.getElementById('chatBox');
-  const inputEl = document.getElementById('chatInput');
-  const sendBtn = document.getElementById('sendBtn');
-  const timerEl = document.getElementById('timer');
-  const extendBtn = document.getElementById('extend');
+    function addMsg(text, role='bot', typing=false){
+      const el = document.createElement('div');
+      el.className = 'msg ' + (role === 'me' ? 'me' : 'bot') + (typing ? ' typing' : '');
+      el.innerHTML = text + `<span class="time">${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>`;
+      chat.appendChild(el);
+      chat.scrollTop = chat.scrollHeight;
+      return el;
+    }
 
-  function showChat(){
-    // Oculta las demás secciones y muestra el chat
-    document.querySelectorAll('main > section').forEach(s=>{ if (s.id !== 'chat') s.classList.add('hidden'); });
-    chatSec.classList.remove('hidden');
-  }
+    function sendQuick(txt){
+      input.value = txt;
+      handleSend();
+    }
 
-  // --- Timer ---
-  let seconds = 0; let tid = null;
-  function updateTimer(){
-    const mm = String(Math.floor(seconds/60)).padStart(2,'0');
-    const ss = String(seconds%60).padStart(2,'0');
-    timerEl.textContent = `${mm}:${ss}`;
-    if (seconds <= 30) timerEl.classList.add('text-rose-300');
-  }
-  function startTimer(total){
-    seconds = total; updateTimer();
-    tid = setInterval(()=>{
-      seconds--; updateTimer();
-      if (seconds <= 0){ clearInterval(tid); endSession(); }
-    }, 1000);
-  }
+    function handleSend(){
+      const text = input.value.trim();
+      if(!text) return;
+      addMsg(escapeHtml(text), 'me');
+      input.value = '';
 
-  // --- Chat helpers ---
-  function push(role, text){
-    const wrap = document.createElement('div');
-    wrap.className = role==='user' ? 'flex justify-end' : 'flex justify-start';
-    const bubble = document.createElement('div');
-    bubble.className = (role==='user' ? 'bg-violet-600/90' : 'bg-zinc-900/80') + ' px-4 py-2 rounded-2xl max-w-[85%] text-sm whitespace-pre-wrap';
-    bubble.textContent = text;
-    wrap.appendChild(bubble); chatBox.appendChild(wrap);
-    chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
-  }
+      // Simular "escribiendo…"
+      const typingEl = addMsg('Escribiendo…', 'bot', true);
 
-  async function botReply(text){
-    // TODO: reemplazar por fetch a tu backend /api/chat con Authorization: Bearer sessionToken
-    // const res = await fetch('/api/chat', { method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization': `Bearer ${sessionToken}` }, body: JSON.stringify({ text }) });
-    // const data = await res.json(); return data.reply;
-    await new Promise(r=>setTimeout(r, 450));
-    return '✨ ' + (text ? `Sobre “${text}”: escuchá tu intuición y priorizá tu bienestar. Si querés, seguimos con otra pregunta.` : 'Estoy listo. ¿Sobre qué querés hablar?');
-  }
+      // DEMO: lógica simple de respuesta
+      setTimeout(() => {
+        typingEl.remove();
+        const reply = demoReply(text);
+        addMsg(reply, 'bot');
+      }, 650);
+    }
 
-  async function send(){
-    const val = inputEl.value.trim(); if(!val) return; inputEl.value='';
-    push('user', val);
-    const reply = await botReply(val);
-    push('bot', reply);
-  }
+    // TODO: integrar backend real aquí
+    // Ejemplo:
+    // async function handleSend(){
+    //   const text = input.value.trim();
+    //   if(!text) return;
+    //   addMsg(escapeHtml(text), 'me');
+    //   input.value = '';
+    //   const typingEl = addMsg('Escribiendo…', 'bot', true);
+    //   try {
+    //     const res = await fetch('/api/chat', {
+    //       method:'POST',
+    //       headers:{'Content-Type':'application/json'},
+    //       body:JSON.stringify({message:text, sessionSeconds:600})
+    //     });
+    //     const data = await res.json();
+    //     typingEl.remove();
+    //     addMsg(escapeHtml(data.reply || '…'), 'bot');
+    //   } catch(e){
+    //     typingEl.remove();
+    //     addMsg('Perdón, hubo un problema de conexión. Probá de nuevo en unos segundos.', 'bot');
+    //   }
+    // }
 
-  function endSession(){
-    push('bot', '⏳ Tu sesión terminó. ¿Querés extender 10 minutos más?');
-    inputEl.disabled = true; sendBtn.disabled = true;
-  }
+    function demoReply(text){
+      const t = text.toLowerCase();
+      if(t.includes('ansio') || t.includes('nerv')) {
+        return 'Gracias por contarlo. Probemos algo breve ahora mismo: inhalá en 4, retené 4, exhalá en 6. Repetí 3 veces. ¿Querés que hagamos un plan de 10 minutos para bajar la ansiedad?';
+      }
+      if(t.includes('dorm') || t.includes('sueñ')) {
+        return 'El sueño puede mejorar con rutinas simples. ¿Cómo fue tu última hora antes de dormir? Si querés, armamos una mini higiene del sueño en 4 pasos para esta noche.';
+      }
+      if(t.includes('discus') || t.includes('pelea') || t.includes('enojo')){
+        return 'Es normal quedar removido después de una discusión. ¿Preferís desahogarte primero o buscar una frase para reparar cuando estés listo?';
+      }
+      if(t.includes('soltar') || t.includes('triste') || t.includes('dolor')) {
+        return 'Te leo. Podemos hacer un ejercicio breve: nombrar la emoción, ubicarla en el cuerpo y darle un permiso. Si te sirve, lo guiamos juntos ahora.';
+      }
+      if(t.includes('precio') || t.includes('pagar') || t.includes('mercado pago')) {
+        return 'Pronto vas a poder iniciar sesiones de 10 minutos con pago seguro por Mercado Pago. Por ahora, esta es una demo gratuita.';
+      }
+      return 'Estoy con vos. Contame un poco más: ¿qué te preocupa hoy y qué te gustaría que cambie en los próximos 10 minutos?';
+    }
 
-  sendBtn?.addEventListener('click', send);
-  inputEl?.addEventListener('keydown', (e)=>{ if(e.key==='Enter') send(); });
-  extendBtn?.addEventListener('click', ()=>{
-    // TODO: redirigir a una preferencia de MP para extensión de +10′ y usar su webhook para sumar tiempo del lado servidor
-    location.href = 'https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=REEMPLAZAR_PREF_ID_EXTENSION';
-  });
+    function escapeHtml(str){
+      return str.replace(/[&<>"']/g, m => (
+        { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[m]
+      ));
+    }
 
-  if (sessionToken){
-    showChat();
-    const mins = Number.isFinite(minutesParam) ? minutesParam : 10;
-    startTimer(mins*60);
-    push('bot', `✨ Bienvenid@. Tenés ${mins} minutos. ¿Sobre qué querés hablar?`);
-  }
-
-  // Modo demo: ?demo=1&m=2 para probar sin pago
-  if (!sessionToken && qs.get('demo')==='1'){
-    showChat();
-    const mins = Number.isFinite(minutesParam) ? minutesParam : 2;
-    startTimer(mins*60);
-    push('bot', `✨ Modo demo. Tenés ${mins} minutos para probar.`);
-  }
-})();
-</script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
 </body>
 </html>
