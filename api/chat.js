@@ -6,28 +6,39 @@ const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4.1';
 
 // ===== Redis (Upstash REST) – sin dependencias =====
 async function redisGet(key) {
+  if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) return null;
   const url = `${process.env.UPSTASH_REDIS_REST_URL}/get/${encodeURIComponent(key)}`;
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${process.env.UPSTASH_REDIS_REST_TOKEN}` }
+  }).catch((e) => {
+    console.error('redis_get_error', e);
+    return null;
   });
-  if (!res.ok) return null;
+  if (!res || !res.ok) return null;
   const json = await res.json().catch(() => null);
   return json?.result ?? null; // string o null
 }
 
 async function redisSetEx(key, value, seconds) {
+  if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) return false;
   const val = encodeURIComponent(value);
   const url = `${process.env.UPSTASH_REDIS_REST_URL}/set/${encodeURIComponent(key)}/${val}?EX=${seconds}`;
   const res = await fetch(url, {
     method: 'POST',
     headers: { Authorization: `Bearer ${process.env.UPSTASH_REDIS_REST_TOKEN}` }
+  }).catch((e) => {
+    console.error('redis_set_error', e);
+    return null;
   });
-  return res.ok;
+  return !!(res && res.ok);
 }
-// (opcional) borrar historial manualmente
+// (opcional)
 async function redisDel(key) {
+  if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) return;
   const url = `${process.env.UPSTASH_REDIS_REST_URL}/del/${encodeURIComponent(key)}`;
-  await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${process.env.UPSTASH_REDIS_REST_TOKEN}` } });
+  await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${process.env.UPSTASH_REDIS_REST_TOKEN}` } }).catch((e) => {
+    console.error('redis_del_error', e);
+  });
 }
 // ====================================================
 
@@ -51,12 +62,10 @@ export default async function handler(req, res) {
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return bad(res, 'method_not_allowed', 'Method not allowed', 405);
 
-    // Vars requeridas
+    // Vars requeridas mínimas
     const secret = process.env.SESSION_JWT_SECRET;
     if (!secret) return bad(res, 'missing_secret', 'Missing SESSION_JWT_SECRET', 500);
     if (!process.env.OPENAI_API_KEY) return bad(res, 'missing_openai_key', 'Falta OPENAI_API_KEY', 500);
-    if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN)
-      return bad(res, 'missing_redis_vars', 'Faltan UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN', 500);
 
     const { message, sessionToken } = await readBody(req);
     if (!message || typeof message !== 'string') return bad(res, 'no_message', 'Falta message');
@@ -77,7 +86,6 @@ export default async function handler(req, res) {
     const sys = `
 Sos TempoChat, un psicólogo experimentado, cercano y empático.
 Objetivo: brindar apoyo emocional real en charlas privadas de ~10 minutos, con calidez humana y respeto.
-
 Reglas de interacción:
 - Presentate solo en tu primer mensaje con algo breve y cálido. Ej: "Hola, soy TempoChat, gracias por escribirme. ¿Cómo te llamás?"
 - Pedí el nombre una sola vez (en ese primer mensaje). Si el usuario ya lo dijo antes, no lo vuelvas a pedir.
@@ -90,14 +98,16 @@ Reglas de interacción:
 - Respondé en español rioplatense.
 `.trim();
 
-    // ===== Memoria de 10′ por sessionToken (Redis) =====
-    // Recuperar historial
+    // ===== Memoria de 10′ por sessionToken (Redis) con fallback =====
     let history = [];
     try {
-      const stored = await redisGet(sessionToken);         // string o null
+      const stored = await redisGet(sessionToken); // string o null
       history = stored ? JSON.parse(stored) : [];
       if (!Array.isArray(history)) history = [];
-    } catch { history = []; }
+    } catch (e) {
+      console.error('history_load_error', e);
+      history = []; // fallback sin memoria
+    }
 
     // Armar messages con historial
     const messages = [
@@ -130,6 +140,7 @@ Reglas de interacción:
 
     if (!oaRes.ok) {
       const txt = await oaRes.text().catch(() => '');
+      console.error('openai_bad_status', oaRes.status, txt);
       return bad(res, 'openai_error', txt || (`OpenAI status ${oaRes.status}`), 502);
     }
 
@@ -137,10 +148,14 @@ Reglas de interacción:
     const reply = data?.choices?.[0]?.message?.content?.trim()
       || 'Hola, soy TempoChat. ¿Cómo te llamás? Contame qué te gustaría trabajar hoy.';
 
-    // Actualizar historial y guardar con TTL = 600s (10′)
-    history.push({ role: 'user', content: message });
-    history.push({ role: 'assistant', content: reply });
-    await redisSetEx(sessionToken, JSON.stringify(history), 600);
+    // Actualizar historial (si Redis está ok) – si falla, seguimos igual
+    try {
+      history.push({ role: 'user', content: message });
+      history.push({ role: 'assistant', content: reply });
+      await redisSetEx(sessionToken, JSON.stringify(history), 600);
+    } catch (e) {
+      console.error('history_save_error', e);
+    }
 
     return ok(res, { reply, remainingSeconds: remaining });
   } catch (e) {
