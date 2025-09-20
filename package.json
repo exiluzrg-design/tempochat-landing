@@ -12,7 +12,8 @@
 "jsonwebtoken": "^9.0.2"
 },
 "devDependencies": {},
-"engines": {
-"node": ">=18 <22"
+  "engines": {
+    "node": "20.x"
+  }
 }
 }
