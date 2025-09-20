@@ -1,0 +1,10 @@
+{
+"functions": {
+"api/**/*.js": {
+"runtime": "nodejs20.x"
+}
+},
+"routes": [
+{ "src": "/api/(.*)", "headers": { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type, Authorization", "Access-Control-Allow-Methods": "POST, GET, OPTIONS" } }
+]
+}
