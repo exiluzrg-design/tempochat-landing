@@ -218,7 +218,45 @@
     //     typingEl.remove();
     //     addMsg('Perdón, hubo un problema de conexión. Probá de nuevo en unos segundos.', 'bot');
     //   }
-    // }
+
+    <script>
+  let sessionToken = null;
+
+  async function ensureSession(){
+    if (sessionToken) return sessionToken;
+    const r = await fetch('/api/new-session', { method: 'POST' });
+    const j = await r.json();
+    if (j.sessionToken) sessionToken = j.sessionToken;
+    return sessionToken;
+  }
+
+  async function handleSend(){
+    const text = input.value.trim();
+    if(!text) return;
+    addMsg(escapeHtml(text), 'me');
+    input.value = '';
+    const typingEl = addMsg('Escribiendo…', 'bot', true);
+    try {
+      await ensureSession();
+      const r = await fetch('/api/chat', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ message: text, sessionToken })
+      });
+      const j = await r.json();
+      typingEl.remove();
+      if (j.error) {
+        if (j.error === 'session_expired') sessionToken = null; // pedimos nueva en el próximo envío
+        addMsg(escapeHtml(j.message || 'Error'), 'bot');
+        return;
+      }
+      addMsg(escapeHtml(j.reply || '…'), 'bot');
+    } catch(e){
+      typingEl.remove();
+      addMsg('Perdón, hubo un problema de conexión. Probá de nuevo.', 'bot');
+    }
+  }
+</script>
 
     function demoReply(text){
       const t = text.toLowerCase();
