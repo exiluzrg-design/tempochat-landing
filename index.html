@@ -28,9 +28,7 @@
       display:flex; align-items:center; gap:12px; font-weight:700; letter-spacing:.3px; font-size:18px;
     }
     .badge{font-size:12px; color:var(--muted); border:1px solid #2a2f3a; padding:6px 10px; border-radius:999px}
-    .hero{
-      display:grid; grid-template-columns:1.1fr .9fr; gap:28px; align-items:center;
-    }
+    .hero{display:grid; grid-template-columns:1.1fr .9fr; gap:28px; align-items:center;}
     @media (max-width:960px){ .hero{grid-template-columns:1fr} }
     .card{
       background:linear-gradient(180deg, #161a22 0%, #13161c 100%);
@@ -49,9 +47,7 @@
     .btn:hover{transform:translateY(-1px); background:#12161e}
     .btn.primary{background:linear-gradient(180deg, #1a75ff, #0053cc); border-color:#0a4ec4}
     .btn.primary:hover{filter:brightness(1.05)}
-    .trust{
-      display:flex; gap:12px; align-items:center; margin-top:10px; color:var(--muted); font-size:13px;
-    }
+    .trust{display:flex; gap:12px; align-items:center; margin-top:10px; color:var(--muted); font-size:13px;}
     .dot{width:7px; height:7px; border-radius:50%; background:var(--accent)}
     /* Chat */
     .chat-wrap{display:flex; flex-direction:column; gap:12px}
@@ -66,9 +62,7 @@
     .bot{align-self:flex-start; background:#141922; border:1px solid #263043}
     .time{display:block; margin-top:6px; color:var(--muted); font-size:11px}
     .typing{opacity:.8; font-style:italic}
-    .composer{
-      display:flex; gap:10px; margin-top:10px
-    }
+    .composer{display:flex; gap:10px; margin-top:10px}
     .input{
       flex:1; padding:12px 14px; border-radius:12px; border:1px solid #2a2f3a; background:#0f1116; color:var(--text);
       outline:none;
@@ -126,13 +120,13 @@
         <div class="chat-wrap" id="chat">
           <div class="chat-header">
             <div class="badge">Beta conectada al backend</div>
-            <span class="tag">⏱ 10′ por sesión</span>
+            <span class="tag">⏱ 10:00 restantes</span>
           </div>
 
           <div class="chat" id="chatBox" aria-live="polite">
             <div class="msg bot">
               Hola, soy Tempo. Estoy para acompañarte. ¿Qué te gustaría conversar hoy?
-              <span class="time">IA de acompañamiento · Demo</span>
+              <span class="time">IA de acompañamiento · Beta</span>
             </div>
           </div>
 
@@ -146,7 +140,7 @@
             <button onclick="sendQuick('Tuve una discusión y me dejó mal')">Discusión</button>
             <button onclick="sendQuick('Necesito soltar y estar en paz')">Soltar</button>
           </div>
-          <p class="tiny">⚠️ Demo: respuestas simuladas. Próximamente integración con backend y pagos.</p>
+          <p class="tiny">⚠️ Beta: sesión real de 10 minutos conectada al backend.</p>
         </div>
       </div>
     </section>
@@ -158,7 +152,6 @@
   </div>
 
 <script>
-  // Referencias al DOM
   const chat = document.getElementById('chatBox');
   const input = document.getElementById('msgInput');
 
@@ -187,33 +180,54 @@
     ));
   }
 
-  // ---------- Helper robusto de fetch JSON ----------
   async function fetchJson(url, options){
     const res = await fetch(url, options);
-    const txt = await res.text();           // leemos texto SIEMPRE
+    const txt = await res.text();
     try {
       const data = txt ? JSON.parse(txt) : {};
       if (!res.ok) throw Object.assign(new Error(data.message || res.statusText), {status: res.status, data});
       return data;
     } catch (e) {
-      // si no era JSON válido, incluimos el HTML en el error
       if (!res.ok) throw Object.assign(new Error(txt || res.statusText), {status: res.status});
-      // respuesta 200 pero cuerpo no-JSON (no debería pasar), devolvemos texto
       return { raw: txt };
     }
   }
 
-  // ---------- Backend (sesión de 10′ + chat) ----------
+  // ---- Sesiones y timer ----
   let sessionToken = null;
+  let remaining = 0;
+  let timerId = null;
+
+  function fmt(sec){
+    const m = Math.floor(sec/60).toString().padStart(2,'0');
+    const s = Math.floor(sec%60).toString().padStart(2,'0');
+    return `${m}:${s}`;
+  }
+
+  function startTimer(sec){
+    remaining = sec;
+    const tag = document.querySelector('.tag');
+    clearInterval(timerId);
+    timerId = setInterval(() => {
+      remaining = Math.max(0, remaining - 1);
+      if (tag) tag.textContent = `⏱ ${fmt(remaining)} restantes`;
+      if (remaining <= 0) {
+        clearInterval(timerId);
+        sessionToken = null;
+        input.disabled = true;
+        input.placeholder = 'La sesión terminó. Escribí para renovar.';
+      }
+    }, 1000);
+  }
 
   async function ensureSession(){
-    if (sessionToken) return sessionToken;
-
-    // IMPORTANTE: probá en tu dominio de Production (www.tempochat.com.ar)
-    // Si estás en una URL de Preview, asegurate de tener la env var también en Preview.
+    if (sessionToken && remaining > 0) return sessionToken;
     const j = await fetchJson('/api/new-session', { method: 'POST' });
     if (!j.sessionToken) throw new Error(j.message || 'No se pudo crear la sesión');
     sessionToken = j.sessionToken;
+    startTimer(j.expiresIn ?? 600);
+    input.disabled = false;
+    input.placeholder = 'Escribí acá… (Enter para enviar)';
     return sessionToken;
   }
 
@@ -226,7 +240,7 @@
 
     const typingEl = addMsg('Escribiendo…', 'bot', true);
     try {
-      await ensureSession();                        // crea token si falta
+      await ensureSession();
       if (!sessionToken) throw new Error('Sin token de sesión');
 
       const j = await fetchJson('/api/chat', {
@@ -238,9 +252,13 @@
       typingEl.remove();
 
       if (j.error) {
-        if (j.error === 'session_expired') sessionToken = null; // se renueva en el próximo envío
+        if (j.error === 'session_expired') sessionToken = null;
         addMsg(escapeHtml(j.message || 'Error'), 'bot');
         return;
+      }
+
+      if (typeof j.remainingSeconds === 'number') {
+        startTimer(j.remainingSeconds);
       }
 
       addMsg(escapeHtml(j.reply || '…'), 'bot');
@@ -251,10 +269,12 @@
     }
   }
 
-  // Footer año
+  // Enter para enviar
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') handleSend();
+  });
+
   document.getElementById('year').textContent = new Date().getFullYear();
 </script>
-
-
 </body>
 </html>
