@@ -1,0 +1,33 @@
+let currentReqId = 0;
+
+async function send(text) {
+  const reqId = ++currentReqId;
+  setTyping(true);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30000);
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ text, sessionId: getSessionId() }),
+      signal: controller.signal
+    });
+    const raw = await res.text();
+    const json = safeJson(raw);
+
+    if (reqId === currentReqId) setTyping(false);      // ← APAGA SIEMPRE
+    if (!res.ok) return showError(json || raw);
+
+    const reply = json.message || json.assistant || json.reply || json.output || raw;
+    if (json.sessionId) setSessionId(json.sessionId);  // guardar sessionId
+    showReply(reply);
+  } catch (e) {
+    if (reqId === currentReqId) setTyping(false);      // ← TAMBIÉN EN ERRORES
+    showError(e?.name === 'AbortError' ? 'timeout' : e?.message || e);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function safeJson(t){ try{ return JSON.parse(t);}catch{ return { raw:t }; } }
