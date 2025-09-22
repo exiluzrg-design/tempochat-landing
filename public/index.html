@@ -68,6 +68,10 @@
     </section>
   </div>
 
+<script>
+  // Arrancar SIEMPRE una sesión nueva al recargar
+  try { localStorage.removeItem('tempochat.sid'); } catch {}
+  
   <script>
     // Elementos
     let currentReqId = 0;
