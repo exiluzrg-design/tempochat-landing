@@ -4,145 +4,72 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>TempoChat — charlas privadas en 10 minutos</title>
-  <meta name="description" content="TempoChat: sesiones privadas de 10 minutos, sin registro, 24/7 y con memoria de conversación. Privacidad real y foco en lo que necesitás ahora." />
+  <meta name="description" content="Sesiones privadas de 10 minutos, sin registro, 24/7 y con memoria de conversación. Privacidad real y foco en lo que necesitás ahora." />
   <style>
-    :root{
-      --bg:#0b0b0c;--panel:#141417;--panel-2:#101013;--text:#e8e8ec;--muted:#a7a7b2;--line:#222227;--brand:#2f81f7;--ok:#24c277;--warn:#f6a700;
-    }
-    *{box-sizing:border-box}
-    html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
-    a{color:inherit;text-decoration:none}
-    .wrap{max-width:1080px;margin:0 auto;padding:24px}
-    header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid var(--line)}
-    .brand{display:flex;align-items:center;gap:10px}
-    .logo{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--brand),#7aa5ff)}
-    nav a{color:var(--muted);margin-left:16px}
+    :root{ --bg:#0b0b0c; --panel:#141417; --panel-2:#101013; --text:#e8e8ec; --muted:#a7a7b2; --line:#222227; --brand:#2f81f7; }
+    *{ box-sizing:border-box }
+    html,body{ margin:0; padding:0; background:var(--bg); color:var(--text); font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif }
+    .wrap{ max-width:1080px; margin:0 auto; padding:24px }
+    header{ display:flex; align-items:center; justify-content:space-between; gap:16px; padding:12px 0; border-bottom:1px solid var(--line) }
+    .brand{ display:flex; align-items:center; gap:10px }
+    .logo{ width:28px; height:28px; border-radius:8px; background:linear-gradient(135deg,var(--brand),#7aa5ff) }
 
-    .hero{display:grid;grid-template-columns:1.1fr .9fr;gap:28px;align-items:center;padding:28px 0}
-    .hero h1{font-size:clamp(28px,4vw,44px);line-height:1.1;margin:0 0 10px}
-    .hero p{color:var(--muted);margin:0 0 18px}
-    .cta{display:flex;gap:10px;flex-wrap:wrap}
-    .btn{background:var(--brand);color:#fff;border:none;border-radius:12px;padding:12px 16px;cursor:pointer}
-    .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text)}
+    .hero{ padding:28px 0 }
+    .hero h1{ font-size:clamp(28px,4vw,44px); line-height:1.1; margin:0 0 10px }
+    .hero p{ color:var(--muted); margin:0 0 18px }
+    .btn{ background:var(--brand); color:#fff; border:none; border-radius:12px; padding:12px 16px; cursor:pointer }
 
-    .pros{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:10px}
-    .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
-    .card h3{margin:0 0 6px;font-size:18px}
-    .card p{margin:0;color:var(--muted)}
-
-    .demo{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:36px 0}
-    .demo .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
-    .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-    .kpi{background:var(--panel-2);border:1px dashed var(--line);border-radius:12px;padding:12px;text-align:center}
-    .kpi .big{font-weight:700;font-size:22px}
-    .kpi .muted{color:var(--muted);font-size:12px}
-
-    .chat{display:flex;flex-direction:column;height:420px}
-    .chatlog{flex:1;overflow:auto;border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--panel-2)}
-    .msg{max-width:80%;padding:10px 14px;border-radius:14px;margin:6px 0;line-height:1.45}
-    .user{background:#2b2b34;margin-left:auto;border-bottom-right-radius:4px}
-    .assistant{background:#1b1b20;margin-right:auto;border-bottom-left-radius:4px}
-    .sys{color:var(--muted);text-align:center;margin:4px 0}
-    .typing{display:none;color:var(--muted);margin-top:6px}
-    .row{display:flex;gap:8px;margin-top:10px}
-    input,button{font:inherit}
-    input{flex:1;background:#121216;color:var(--text);border:1px solid var(--line);border-radius:12px;padding:10px}
-    button{background:var(--brand);color:#fff;border:none;border-radius:12px;padding:10px 14px;cursor:pointer}
-    .error{color:#ff7a7a;font-size:13px;margin-top:6px;display:none}
-
-    footer{border-top:1px solid var(--line);padding:16px 0;color:var(--muted);font-size:13px}
-
-    @media (max-width:920px){
-      .hero{grid-template-columns:1fr}
-      .demo{grid-template-columns:1fr}
-      .pros{grid-template-columns:1fr 1fr}
-    }
-    @media (max-width:560px){ .pros{grid-template-columns:1fr} }
+    .chat{ display:flex; flex-direction:column; height:460px }
+    .chatlog{ flex:1; overflow:auto; border:1px solid var(--line); border-radius:12px; padding:10px; background:var(--panel-2) }
+    .msg{ max-width:80%; padding:10px 14px; border-radius:14px; margin:6px 0; line-height:1.45 }
+    .user{ background:#2b2b34; margin-left:auto; border-bottom-right-radius:4px }
+    .assistant{ background:#1b1b20; margin-right:auto; border-bottom-left-radius:4px }
+    .system{ color:var(--muted); text-align:center; margin:4px 0 }
+    .typing{ display:none; color:var(--muted); margin:6px 0 }
+    .row{ display:flex; gap:8px; margin-top:10px }
+    input,button{ font:inherit }
+    input{ flex:1; background:#121216; color:var(--text); border:1px solid var(--line); border-radius:12px; padding:10px }
+    button{ background:var(--brand); color:#fff; border:none; border-radius:12px; padding:10px 14px; cursor:pointer }
+    .error{ color:#ff7a7a; font-size:13px; margin-top:6px; display:none }
+    .timer{ font-size:14px; color:var(--muted); margin:6px 0; text-align:center }
+    .nudge{ display:none; gap:8px; justify-content:center; margin:6px 0 }
+    .ghost{ background:transparent; border:1px solid var(--line); color:var(--text) }
   </style>
 </head>
 <body>
   <div class="wrap">
     <header>
       <div class="brand"><div class="logo"></div><strong>TempoChat</strong></div>
-      <nav>
-        <a href="#pros">Ventajas</a>
-        <a href="#demo">Demo</a>
-        <a href="#faq">FAQ</a>
-      </nav>
     </header>
 
     <section class="hero">
-      <div>
-        <h1>Charlas privadas de <span style="color:var(--brand)">10 minutos</span>, sin vueltas.</h1>
-        <p>TempoChat es un espacio breve y seguro para ordenar ideas, bajar la ansiedad y salir con un próximo paso claro. Sin registro. 24/7. Memoria por sesión.</p>
-        <div class="cta">
-          <a class="btn" href="#demo">Probar la demo</a>
-          <a class="btn ghost" href="#pros">Ver ventajas</a>
+      <h1>Charlas privadas de 10 minutos</h1>
+      <p>Un espacio breve y seguro para ordenar ideas y salir con un próximo paso claro.</p>
+      <button class="btn" onclick="document.getElementById('msg').focus()">Comenzar demo</button>
+    </section>
+
+    <section>
+      <div class="chat">
+        <div class="chatlog" id="chatlog">
+          <div class="system">Bienvenido a la demo. Tenés 10 minutos para conversar. Empezá escribiendo abajo 👇</div>
         </div>
-      </div>
-      <div>
-        <div class="card">
-          <h3>Por qué existe TempoChat</h3>
-          <p>Porque muchas veces solo necesitás <strong>10 minutos</strong> de claridad, sin suscripciones ni formularios.</p>
+        <div class="timer" id="timer">Tiempo restante: 10:00</div>
+        <div class="nudge" id="nudge">
+          <button class="btn" id="addTime">Agregar 5′</button>
+          <button class="btn ghost" id="wrapUp">Vamos cerrando</button>
         </div>
-        <div class="pros" id="pros">
-          <div class="card"><h3>⚡️ Rápido</h3><p>Entrás, hablás y salís con una idea concreta.</p></div>
-          <div class="card"><h3>🔒 Privado</h3><p>Sin registro ni mails. Tu sesión expira.</p></div>
-          <div class="card"><h3>⏱ 10 minutos</h3><p>Formato corto para ir al punto.</p></div>
-          <div class="card"><h3>🧠 Memoria</h3><p>Recuerda el contexto durante la sesión.</p></div>
-          <div class="card"><h3>🌙 24/7</h3><p>Disponible cuando lo necesitás.</p></div>
-          <div class="card"><h3>💳 Precio claro</h3><p>Pagás por sesión. Nada oculto.</p></div>
+        <div class="typing" id="typing">⏳ escribiendo…</div>
+        <div class="error" id="error"></div>
+        <div class="row">
+          <input id="msg" placeholder="Escribí acá…" />
+          <button id="send">Enviar</button>
         </div>
       </div>
     </section>
-
-    <section class="demo" id="demo">
-      <div class="panel">
-        <h2 style="margin-top:0">Demo en vivo</h2>
-        <div class="chat">
-          <div class="chatlog" id="chatlog">
-            <div class="sys">Bienvenido a la demo. Probá escribir algo abajo 👇</div>
-          </div>
-          <div class="typing" id="typing">⏳ escribiendo…</div>
-          <div class="error" id="error"></div>
-          <div class="row">
-            <input id="msg" placeholder="Escribí acá y tocá Enviar…" />
-            <button id="send">Enviar</button>
-          </div>
-        </div>
-      </div>
-      <div class="panel">
-        <h2 style="margin-top:0">Ventajas clave</h2>
-        <div class="kpis">
-          <div class="kpi"><div class="big">10′</div><div class="muted">Duración justa</div></div>
-          <div class="kpi"><div class="big">0</div><div class="muted">Registros</div></div>
-          <div class="kpi"><div class="big">24/7</div><div class="muted">Disponibilidad</div></div>
-        </div>
-        <div style="margin-top:12px;color:var(--muted);font-size:14px">
-          Pensado para tomar decisiones, sacar peso de la cabeza y seguir. Ideal para: indecisiones, bloqueos creativos, simple descarga.
-        </div>
-      </div>
-    </section>
-
-    <section id="faq" style="margin:30px 0">
-      <div class="card">
-        <h3 style="margin:0 0 8px">Preguntas frecuentes</h3>
-        <details><summary>¿Qué pasa al terminar los 10 minutos?</summary><div>Podés cerrar con un resumen accionable o agregar tiempo si lo necesitás.</div></details>
-        <details><summary>¿Se guarda mi información?</summary><div>La sesión mantiene memoria solo mientras conversás. Podés borrarla al salir.</div></details>
-        <details><summary>¿Necesito crear cuenta?</summary><div>No. Entrás directo, pagás por sesión y listo.</div></details>
-      </div>
-    </section>
-
-    <footer>
-      © <span id="year"></span> TempoChat — Hecho con foco y privacidad.
-    </footer>
   </div>
 
   <script>
-    // Año en footer
-    document.getElementById('year').textContent = new Date().getFullYear();
-
-    // Chat demo con APAGADO de "escribiendo…" garantizado
+    // Elementos
     let currentReqId = 0;
     const $ = (id) => document.getElementById(id);
     const chatlog = $('chatlog');
@@ -150,42 +77,82 @@
     const errorBox = $('error');
     const input = $('msg');
     const btn = $('send');
+    const timerEl = $('timer');
+    const nudge = $('nudge');
+    const btnAddTime = $('addTime');
+    const btnWrap = $('wrapUp');
 
+    // Temporizador
+    let sessionSeconds = 600; // 10 minutos
+    let interval; let askedAtNine = false;
+
+    function fmt(t){ const m=Math.floor(t/60); const s=String(t%60).padStart(2,'0'); return `${m}:${s}`; }
+    function updateTimer(){ timerEl.textContent = `Tiempo restante: ${fmt(sessionSeconds)}`; }
+    function startTimer(){
+      clearInterval(interval); updateTimer();
+      interval = setInterval(()=>{
+        sessionSeconds = Math.max(sessionSeconds - 1, 0);
+        updateTimer();
+        if(sessionSeconds===60 && !askedAtNine){
+          askedAtNine = true;
+          nudge.style.display = 'flex';
+          addMessage('assistant','Queda 1 minuto. ¿Sumamos 5 minutos o preferís cerrar con una conclusión/reflexión?');
+        }
+        if(sessionSeconds===0){
+          clearInterval(interval);
+          nudge.style.display = 'none';
+          addMessage('assistant','La sesión llegó a su fin. Gracias por la charla.');
+          input.disabled = true; btn.disabled = true;
+        }
+      },1000);
+    }
+    startTimer();
+
+    // Utilidades UI
     function setTyping(on){ typing.style.display = on ? 'block' : 'none'; }
     function showError(msg){ errorBox.style.display='block'; errorBox.textContent = typeof msg==='string'? msg : JSON.stringify(msg); }
     function clearError(){ errorBox.style.display='none'; errorBox.textContent=''; }
-    function addMessage(role,text){
-      const d=document.createElement('div'); d.className='msg '+role; d.textContent=String(text||''); chatlog.appendChild(d); chatlog.scrollTop = chatlog.scrollHeight;
-    }
+    function addMessage(role,text){ const d=document.createElement('div'); d.className='msg '+role; d.textContent=String(text||''); chatlog.appendChild(d); chatlog.scrollTop = chatlog.scrollHeight; }
 
+    // Sesión (frontend)
     function getSessionId(){ return localStorage.getItem('tempochat.sid') || ''; }
     function setSessionId(id){ if(id) localStorage.setItem('tempochat.sid', id); }
     function safeJson(t){ try{ return JSON.parse(t); }catch{ return { raw:t }; } }
 
+    // Backend call
     async function send(text){
-      const reqId = ++currentReqId;
-      clearError(); setTyping(true);
-      const controller = new AbortController();
-      const t = setTimeout(()=>controller.abort(), 30000);
+      const reqId = ++currentReqId; clearError(); setTyping(true);
+      const controller = new AbortController(); const to = setTimeout(()=>controller.abort(), 30000);
       try{
         const res = await fetch('/api/chat',{
           method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ text, sessionId: getSessionId() }), signal: controller.signal
         });
-        const raw = await res.text();
-        const json = safeJson(raw);
+        const raw = await res.text(); const json = safeJson(raw);
         if(reqId===currentReqId) setTyping(false);
         if(!res.ok){ showError(json?.message || json?.error || raw); return; }
         const reply = json.message || json.assistant || json.reply || json.output || raw;
         if(json.sessionId) setSessionId(json.sessionId);
         addMessage('assistant', reply);
       }catch(e){ if(reqId===currentReqId) setTyping(false); showError(e?.name==='AbortError' ? 'timeout' : (e?.message||'error')); }
-      finally{ clearTimeout(t); }
+      finally{ clearTimeout(to); }
     }
 
-    btn.addEventListener('click', ()=>{
-      const v=input.value.trim(); if(!v) return; addMessage('user', v); input.value=''; send(v);
-    });
+    // Envío
+    btn.addEventListener('click', ()=>{ const v=input.value.trim(); if(!v) return; addMessage('user', v); input.value=''; send(v); });
     input.addEventListener('keydown', (e)=>{ if(e.key==='Enter') btn.click(); });
+
+    // Acciones minuto 9
+    btnAddTime.addEventListener('click', ()=>{
+      sessionSeconds += 5*60; // +5 minutos
+      nudge.style.display = 'none';
+      addMessage('system','Se agregaron 5 minutos a la sesión.');
+    });
+    btnWrap.addEventListener('click', ()=>{
+      nudge.style.display = 'none';
+      const cierre = 'Estamos llegando al final de la sesión. Hagamos un cierre breve con una conclusión clara y una reflexión de lo charlado.';
+      addMessage('user','Hagamos un cierre.');
+      send(cierre);
+    });
   </script>
 </body>
 </html>
