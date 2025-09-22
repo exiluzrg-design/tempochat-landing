@@ -1,17 +1,18 @@
 {
-"name": "tempochat",
-"private": true,
-"type": "module",
-"scripts": {
-"dev": "vercel dev",
-"build": "echo 'Vercel build via platform'",
-"start": "vercel dev"
-},
-"dependencies": {
-"@upstash/redis": "^1.31.4",
-"jsonwebtoken": "^9.0.2"
-},
-"devDependencies": {},
+  "name": "tempochat",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'Vercel build via platform'",
+    "start": "vercel dev"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "@upstash/redis": "^1.31.4",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {},
   "engines": {
     "node": "20.x"
   }
