@@ -19,4 +19,170 @@
     .hero p{ color:var(--muted); margin:0 0 18px }
     .btn{ background:var(--brand); color:#fff; border:none; border-radius:12px; padding:12px 16px; cursor:pointer }
 
-    .chat{ display:flex; flex-direction:column
+    .chat{ display:flex; flex-direction:column; height:460px }
+    .chatlog{ flex:1; overflow:auto; border:1px solid var(--line); border-radius:12px; padding:10px; background:var(--panel-2) }
+    .msg{ max-width:80%; padding:10px 14px; border-radius:14px; margin:6px 0; line-height:1.45 }
+    .user{ background:#2b2b34; margin-left:auto; border-bottom-right-radius:4px }
+    .assistant{ background:#1b1b20; margin-right:auto; border-bottom-left-radius:4px }
+    .system{ color:var(--muted); text-align:center; margin:4px 0 }
+    .typing{ display:none; color:var(--muted); margin:6px 0 }
+    .row{ display:flex; gap:8px; margin-top:10px }
+    input,button{ font:inherit }
+    input{ flex:1; background:#121216; color:var(--text); border:1px solid var(--line); border-radius:12px; padding:10px }
+    button{ background:var(--brand); color:#fff; border:none; border-radius:12px; padding:10px 14px; cursor:pointer }
+    .error{ color:#ff7a7a; font-size:13px; margin-top:6px; display:none }
+    .timer{ font-size:14px; color:var(--muted); margin:6px 0; text-align:center }
+    .nudge{ display:none; gap:8px; justify-content:center; margin:6px 0 }
+    .ghost{ background:transparent; border:1px solid var(--line); color:var(--text) }
+
+    /* Mini-banner de cierre */
+    .closing-banner{ position:fixed; left:0; right:0; bottom:20px; margin:0 auto; max-width:1080px; background:#1b1b20; border:1px solid var(--line); border-radius:12px; padding:10px 14px; color:var(--muted); text-align:center; display:none; box-shadow:0 8px 24px rgba(0,0,0,.3); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand"><div class="logo"></div><strong>TempoChat</strong></div>
+    </header>
+
+    <section class="hero">
+      <h1>Charlas privadas de 10 minutos</h1>
+      <p>Un espacio breve y seguro para ordenar ideas y salir con un próximo paso claro.</p>
+      <button class="btn" onclick="document.getElementById('msg').focus()">Comenzar demo</button>
+    </section>
+
+    <section>
+      <div class="chat">
+        <div class="chatlog" id="chatlog">
+          <div class="system">Bienvenido a la demo. Tenés 10 minutos para conversar. Empezá escribiendo abajo 👇</div>
+        </div>
+        <div class="timer" id="timer">Tiempo restante: 10:00</div>
+        <div class="nudge" id="nudge">
+          <button class="btn" id="addTime">Agregar 5′</button>
+          <button class="btn ghost" id="wrapUp">Vamos cerrando</button>
+        </div>
+        <div class="typing" id="typing">⏳ escribiendo…</div>
+        <div class="error" id="error"></div>
+        <div class="row">
+          <input id="msg" placeholder="Escribí acá…" />
+          <button id="send">Enviar</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div id="closingBanner" class="closing-banner">Cierre en curso… generando conclusión final</div>
+
+  <script>
+    let currentReqId = 0;
+    const $ = (id) => document.getElementById(id);
+    const chatlog = $('chatlog');
+    const typing = $('typing');
+    const errorBox = $('error');
+    const input = $('msg');
+    const btn = $('send');
+    const timerEl = $('timer');
+    const nudge = $('nudge');
+    const btnAddTime = $('addTime');
+    const btnWrap = $('wrapUp');
+    const closingBanner = $('closingBanner');
+
+    let sessionSeconds = 600; // 10 minutos
+    let interval; let askedAtNine = false;
+    let closing = false; // evita doble cierre
+
+    function fmt(t){ const m=Math.floor(t/60); const s=String(t%60).padStart(2,'0'); return `${m}:${s}`; }
+    function updateTimer(){ timerEl.textContent = `Tiempo restante: ${fmt(sessionSeconds)}`; }
+    function startTimer(){
+      clearInterval(interval); updateTimer();
+      interval = setInterval(async ()=>{
+        sessionSeconds = Math.max(sessionSeconds - 1, 0);
+        updateTimer();
+        if(sessionSeconds===60 && !askedAtNine){
+          askedAtNine = true;
+          nudge.style.display = 'flex';
+          addMessage('assistant','Queda 1 minuto. ¿Sumamos 5 minutos o preferís cerrar con una conclusión/reflexión?');
+        }
+        if(sessionSeconds===0){
+          clearInterval(interval);
+          nudge.style.display = 'none';
+          await requestClose('timeout');
+        }
+      },1000);
+    }
+    startTimer();
+
+    function setTyping(on){ typing.style.display = on ? 'block' : 'none'; }
+    function showError(msg){ errorBox.style.display='block'; errorBox.textContent = typeof msg==='string'? msg : JSON.stringify(msg); }
+    function clearError(){ errorBox.style.display='none'; errorBox.textContent=''; }
+    function addMessage(role,text){ const d=document.createElement('div'); d.className='msg '+role; d.textContent=String(text||''); chatlog.appendChild(d); chatlog.scrollTop = chatlog.scrollHeight; }
+
+    function getSessionId(){ return localStorage.getItem('tempochat.sid') || ''; }
+    function setSessionId(id){ if(id) localStorage.setItem('tempochat.sid', id); }
+    function safeJson(t){ try{ return JSON.parse(t); }catch{ return { raw:t }; } }
+
+    function setClosing(on){
+      closing = on;
+      closingBanner.style.display = on ? 'block' : 'none';
+      input.disabled = on; btn.disabled = on; nudge.style.display = 'none';
+    }
+
+    async function extendSession(minutes=5){
+      const r = await fetch('/api/session',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ op:'extend', sessionId: getSessionId(), minutes }) });
+      const txt = await r.text(); const j = safeJson(txt);
+      if(!r.ok){ showError(j?.message||txt); return null; }
+      return j;
+    }
+    async function endSession(){
+      const sid = getSessionId(); if(!sid) return;
+      try{ await fetch('/api/session',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ op:'end', sessionId: sid }) }); }catch{}
+      localStorage.removeItem('tempochat.sid');
+    }
+
+    async function send(text){
+      const reqId = ++currentReqId; clearError(); setTyping(true);
+      const controller = new AbortController(); const to = setTimeout(()=>controller.abort(), 30000);
+      try{
+        const res = await fetch('/api/chat',{
+          method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ text, sessionId: getSessionId() }), signal: controller.signal
+        });
+        const raw = await res.text(); const json = safeJson(raw);
+        if(reqId===currentReqId) setTyping(false);
+        if(!res.ok){ showError(json?.message || json?.error || raw); return; }
+        const reply = json.message || json.assistant || json.reply || json.output || raw;
+        if(json.sessionId) setSessionId(json.sessionId);
+        addMessage('assistant', reply);
+      }catch(e){ if(reqId===currentReqId) setTyping(false); showError(e?.name==='AbortError' ? 'timeout' : (e?.message||'error')); }
+      finally{ clearTimeout(to); }
+    }
+
+    async function requestClose(source){
+      if(closing) return;
+      setClosing(true);
+      try{
+        if(source === 'manual'){ addMessage('user','Hagamos un cierre.'); }
+        else { addMessage('assistant','⏳ La sesión terminó. Preparando un cierre automático...'); }
+        const cierre = 'Generá un cierre breve con la conclusión principal y una reflexión de lo charlado.';
+        await send(cierre);
+        await endSession();
+      }catch(e){ showError(e?.message||'error cierre'); }
+    }
+
+    btn.addEventListener('click', ()=>{ const v=input.value.trim(); if(!v) return; addMessage('user', v); input.value=''; send(v); });
+    input.addEventListener('keydown', (e)=>{ if(e.key==='Enter') btn.click(); });
+
+    btnAddTime.addEventListener('click', async ()=>{
+      const resp = await extendSession(5);
+      if(resp && resp.expiresAt){
+        sessionSeconds += 5*60;
+        nudge.style.display = 'none';
+        addMessage('system','Se agregaron 5 minutos a la sesión.');
+      }
+    });
+    btnWrap.addEventListener('click', async ()=>{
+      nudge.style.display = 'none';
+      await requestClose('manual');
+    });
+  </script>
+</body>
+</html>
