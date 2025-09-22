@@ -68,11 +68,10 @@
     </section>
   </div>
 
-<script>
-  // Arrancar SIEMPRE una sesión nueva al recargar
-  try { localStorage.removeItem('tempochat.sid'); } catch {}
-  
   <script>
+    // Arrancar SIEMPRE una sesión nueva al recargar
+    try { localStorage.removeItem('tempochat.sid'); } catch {}
+
     // Elementos
     let currentReqId = 0;
     const $ = (id) => document.getElementById(id);
@@ -150,6 +149,8 @@
       sessionSeconds += 5*60; // +5 minutos
       nudge.style.display = 'none';
       addMessage('system','Se agregaron 5 minutos a la sesión.');
+      // Opcional: ping al backend para extender la sesión real
+      // fetch('/api/chat',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action:'extend', minutes:5, sessionId: getSessionId() })}).catch(()=>{});
     });
     btnWrap.addEventListener('click', ()=>{
       nudge.style.display = 'none';
