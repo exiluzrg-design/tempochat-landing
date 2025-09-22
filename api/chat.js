@@ -60,33 +60,10 @@ export default async function handler(req, res) {
       }
     }
 
-    // 3) Llamar al modelo con historial
-    const messages = [
-      { role: 'system', content: 'Sos un asistente breve, claro y útil (rioplatense).' },
-      ...history,
-      { role: 'user', content: userText },
-    ];
 
-    const resp = await fetch(OPENAI_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: OPENAI_MODEL,
-        messages,
-        temperature: 0.6,
-      }),
-    });
+    // 3) TEMP: saltear OpenAI y responder fijo para aislar el problema
+const assistantText = `Test OK: recibí "${userText}" y quedó guardado.`;
 
-    if (!resp.ok) {
-      const bodyText = await resp.text();
-      return res.status(502).json({ ok: false, error: 'openai_error', details: bodyText });
-    }
-
-    const json = await resp.json();
-    const assistantText = json.choices?.[0]?.message?.content?.trim() || '...';
 
     // 4) Guardar respuesta del asistente
     if (supabase) {
