@@ -1,271 +1,165 @@
-<!doctype html>
-<html lang="es">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>TempoChat — charlas privadas en 10 minutos</title>
-  <meta name="description" content="Sesiones privadas de 10 minutos, sin registro, 24/7 y con memoria de conversación. Privacidad real y foco en lo que necesitás ahora." />
-  <style>
-    :root{ --bg:#0b0b0c; --panel:#141417; --panel-2:#101013; --text:#e8e8ec; --muted:#a7a7b2; --line:#222227; --brand:#2f81f7; }
-    *{ box-sizing:border-box }
-    html,body{ margin:0; padding:0; background:var(--bg); color:var(--text); font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif }
-    .wrap{ max-width:1080px; margin:0 auto; padding:24px }
-    header{ display:flex; align-items:center; justify-content:space-between; gap:16px; padding:12px 0; border-bottom:1px solid var(--line) }
-    .brand{ display:flex; align-items:center; gap:10px }
-    .logo{ width:28px; height:28px; border-radius:8px; background:linear-gradient(135deg,var(--brand),#7aa5ff) }
+// Runtime: Vercel Node 20.x
+// PRIVACIDAD: no se guarda texto de usuarios en la base.
+// Solo se guardan palabras clave agregadas (analytics_topics) vía RPC inc_topics().
 
-    .hero{ padding:28px 0 }
-    .hero h1{ font-size:clamp(28px,4vw,44px); line-height:1.1; margin:0 0 10px }
-    .hero p{ color:var(--muted); margin:0 0 18px }
+const OPENAI_URL = process.env.OPENAI_URL || 'https://api.openai.com/v1/chat/completions';
+const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
-    /* Setup card */
-    .setup{ background:var(--panel-2); border:1px solid var(--line); border-radius:12px; padding:12px; display:flex; flex-wrap:wrap; gap:8px; align-items:center }
-    .setup input{ background:#121216; color:var(--text); border:1px solid var(--line); border-radius:10px; padding:10px; flex:1; min-width:200px }
-    .setup .btn{ background:var(--brand); color:#fff; border:none; border-radius:12px; padding:10px 14px; cursor:pointer; white-space:nowrap }
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    .chat{ display:flex; flex-direction:column; height:460px; margin-top:12px }
-    .chatlog{ flex:1; overflow:auto; border:1px solid var(--line); border-radius:12px; padding:10px; background:var(--panel-2) }
-    .msg{ max-width:80%; padding:10px 14px; border-radius:14px; margin:6px 0; line-height:1.45 }
-    .user{ background:#2b2b34; margin-left:auto; border-bottom-right-radius:4px }
-    .assistant{ background:#1b1b20; margin-right:auto; border-bottom-left-radius:4px }
-    .system{ color:var(--muted); text-align:center; margin:4px 0 }
-    .typing{ display:none; color:var(--muted); margin:6px 0 }
-    .row{ display:flex; gap:8px; margin-top:10px }
-    input,button{ font:inherit }
-    .row input{ flex:1; background:#121216; color:var(--text); border:1px solid var(--line); border-radius:12px; padding:10px }
-    .row button{ background:var(--brand); color:#fff; border:none; border-radius:12px; padding:10px 14px; cursor:pointer }
-    .error{ color:#ff7a7a; font-size:13px; margin-top:6px; display:none }
-    .timer{ font-size:14px; color:var(--muted); margin:6px 0; text-align:center }
+const SESSIONS = `${SUPABASE_URL}/rest/v1/sessions`;
+const TOPICS   = `${SUPABASE_URL}/rest/v1/analytics_topics`;
+const RPC_INC  = `${SUPABASE_URL}/rest/v1/rpc/inc_topics`;
 
-    /* Nudge minuto 9 */
-    .nudge{ display:none; gap:8px; justify-content:center; margin:6px 0 }
-    .ghost{ background:transparent; border:1px solid var(--line); color:var(--text) }
+const T_SESSION_MIN = parseInt(process.env.SESSION_MIN || '10', 10);
 
-    /* Banner de cierre */
-    .closing-banner{ position:fixed; left:0; right:0; bottom:20px; margin:0 auto; max-width:1080px; background:#1b1b20; border:1px solid var(--line); border-radius:12px; padding:10px 14px; color:var(--muted); text-align:center; display:none; box-shadow:0 8px 24px rgba(0,0,0,.3); }
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <header>
-      <div class="brand"><div class="logo"></div><strong>TempoChat</strong></div>
-    </header>
+function cors(){ return { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods':'GET,POST,OPTIONS', 'Access-Control-Allow-Headers':'Content-Type,Authorization' }; }
+const sbAuth = { 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` };
+function ok(res, data){ return res.status(200).json(data); }
+function bad(res, code, message, status=400){ return res.status(status).json({ error: code, message }); }
+function newSessionId(){ return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=(Math.random()*16)|0,v=c==='x'?r:(r&0x3|0x8);return v.toString(16)}); }
 
-    <section class="hero">
-      <h1>Charlas privadas de 10 minutos</h1>
-      <p>Decime tu <strong>nombre</strong> y <strong>qué querés lograr hoy</strong>. Arrancamos con foco y un mini-plan.</p>
+// ---------- Sesiones (solo id/expiración, sin texto) ----------
+async function sbGetSession(sessionId){
+  const url = new URL(SESSIONS);
+  url.searchParams.set('select','session_id,expires_at,started_at');
+  url.searchParams.set('session_id','eq.'+sessionId);
+  const r = await fetch(url, { headers: sbAuth });
+  if(!r.ok) throw new Error(`get_session_failed: ${r.status} ${await r.text()}`);
+  const j = await r.json();
+  return j[0];
+}
+async function sbCreateSession(sessionId){
+  const expiresAt = new Date(Date.now() + T_SESSION_MIN*60*1000).toISOString();
+  const payload = { session_id: sessionId, expires_at: expiresAt };
+  const r = await fetch(SESSIONS, { method:'POST', headers:{...sbAuth, 'Content-Type':'application/json', 'Prefer':'return=representation'}, body: JSON.stringify(payload) });
+  if(!r.ok) throw new Error(`create_session_failed: ${r.status} ${await r.text()}`);
+  return (await r.json())[0];
+}
+async function sbEndSession(sessionId){
+  await fetch(`${SESSIONS}?session_id=eq.${sessionId}`, { method:'DELETE', headers: sbAuth });
+}
 
-      <!-- SETUP: nombre + objetivo (+ ánimo opcional) -->
-      <div class="setup">
-        <input id="name" placeholder="Tu nombre (ej: Nicolás)" />
-        <input id="goal" placeholder="¿Qué querés lograr en 10 minutos?" />
-        <input id="mood" placeholder="Estado de ánimo (opcional: ansioso, confundido…)" />
-        <button class="btn" id="start">Empezar</button>
-      </div>
-    </section>
-
-    <section>
-      <div class="chat">
-        <div class="chatlog" id="chatlog">
-          <div class="system">Bienvenido a la demo. Tenés 10 minutos para conversar. Empezá escribiendo abajo 👇</div>
-        </div>
-        <div class="timer" id="timer">Tiempo restante: 10:00</div>
-
-        <!-- Nudge: opciones a los 9 minutos -->
-        <div class="nudge" id="nudge">
-          <button class="btn" id="addTime">Agregar 5′</button>
-          <button class="btn ghost" id="wrapUp">Vamos cerrando</button>
-        </div>
-
-        <div class="typing" id="typing">⏳ escribiendo…</div>
-        <div class="error" id="error"></div>
-        <div class="row">
-          <input id="msg" placeholder="Escribí acá…" />
-          <button id="send">Enviar</button>
-        </div>
-      </div>
-    </section>
-  </div>
-
-  <div id="closingBanner" class="closing-banner">Cierre en curso… generando conclusión final</div>
-
-  <script>
-    // --------- elementos y estado ----------
-    let currentReqId = 0;
-    const $ = (id) => document.getElementById(id);
-    const chatlog = $('chatlog');
-    const typing = $('typing');
-    const errorBox = $('error');
-    const input = $('msg');
-    const btn = $('send');
-    const timerEl = $('timer');
-    const nudge = $('nudge');
-    const btnAddTime = $('addTime');
-    const btnWrap = $('wrapUp');
-    const closingBanner = $('closingBanner');
-    const fName = $('name');
-    const fGoal = $('goal');
-    const fMood = $('mood');
-    const btnStart = $('start');
-
-    let sessionSeconds = 600; // 10 minutos
-    let interval; let askedAtNine = false;
-    let closing = false;       // evita cierres duplicados
-    let retriedAfter410 = false;
-
-    // --------- helpers UI ----------
-    function fmt(t){ const m=Math.floor(t/60); const s=String(t%60).padStart(2,'0'); return `${m}:${s}`; }
-    function updateTimer(){ timerEl.textContent = `Tiempo restante: ${fmt(sessionSeconds)}`; }
-    function setTyping(on){ typing.style.display = on ? 'block' : 'none'; }
-    function showError(msg){ errorBox.style.display='block'; errorBox.textContent = typeof msg==='string'? msg : JSON.stringify(msg); }
-    function clearError(){ errorBox.style.display='none'; errorBox.textContent=''; }
-    function addMessage(role,text){ const d=document.createElement('div'); d.className='msg '+role; d.textContent=String(text||''); chatlog.appendChild(d); chatlog.scrollTop = chatlog.scrollHeight; }
-    function setClosing(on){ closing = on; closingBanner.style.display = on ? 'block' : 'none'; input.disabled = on; btn.disabled = on; nudge.style.display = 'none'; }
-
-    // --------- sesión local ----------
-    function sidGet(){ return localStorage.getItem('tempochat.sid') || ''; }
-    function sidSet(v){ if(v) localStorage.setItem('tempochat.sid', v); }
-    function sidClear(){ localStorage.removeItem('tempochat.sid'); }
-    function safeJson(t){ try{ return JSON.parse(t); }catch{ return { raw:t }; } }
-
-    // --------- red ----------
-    async function endSessionOnServer(){
-      const sid = sidGet(); if(!sid) return;
-      try{ await fetch('/api/session',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ op:'end', sessionId: sid }) }); }catch{}
+// ---------- Tags (solo palabras clave agregadas, sin PII) ----------
+const TAGS = [
+  { tag:'infidelidad', rx: /(infidelidad|infiel|engaño|cuernos?|traici[oó]n)/i },
+  { tag:'pareja',      rx: /(pareja|novi[oa]|matrimonio|relaci[oó]n)/i },
+  { tag:'separacion',  rx: /(separaci[oó]n|divorcio|ruptura)/i },
+  { tag:'ansiedad',    rx: /(ansiedad|ansioso|ataque de p[aá]nico|palpitaciones)/i },
+  { tag:'estrés',      rx: /(estr[eé]s|estresado|estresante)/i },
+  { tag:'culpa',       rx: /(culpa|culpable)/i },
+  { tag:'miedo',       rx: /(miedo|temor|p[áa]nico)/i },
+  { tag:'autoestima',  rx: /(autoestima|inseguridad|val[ií]a)/i },
+  { tag:'duelo',       rx: /(duelo|p[eé]rdida|luto)/i },
+  { tag:'trabajo',     rx: /(trabajo|oficina|jefe|equipo|burnout)/i },
+  { tag:'productividad', rx: /(productividad|organizar|procrastinaci[oó]n|priorizar)/i },
+  { tag:'carrera',     rx: /(carrera|profesi[oó]n|promoci[oó]n|cambio laboral)/i },
+  { tag:'dinero',      rx: /(dinero|deudas?|finanzas|gastos)/i },
+  { tag:'familia',     rx: /(familia|hij[oa]s?|madre|padre|herman[oa]s?)/i },
+  { tag:'amigos',      rx: /(amig[oa]s?|amistad)/i },
+];
+function extractTags(text){
+  if(!text) return [];
+  const found = [];
+  for(const t of TAGS){
+    if(t.rx.test(text)){
+      if(!found.includes(t.tag)) found.push(t.tag);
+      if(found.length >= 3) break; // límite práctico
     }
-    async function extendSession(minutes=5){
-      const r = await fetch('/api/session',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ op:'extend', sessionId: sidGet(), minutes }) });
-      if(!r.ok) return null; return r.json();
-    }
+  }
+  return found;
+}
+async function sbIncTopics(tags){
+  if(!tags || !tags.length) return;
+  const r = await fetch(RPC_INC, {
+    method:'POST',
+    headers:{ ...sbAuth, 'Content-Type':'application/json' },
+    body: JSON.stringify({ p_tags: tags })
+  });
+  if(!r.ok) throw new Error(`inc_topics_failed: ${r.status} ${await r.text()}`);
+}
+async function sbTopTags(limit=5){
+  const url = new URL(TOPICS);
+  url.searchParams.set('select','tag,count,last_seen');
+  url.searchParams.set('order','count.desc,last_seen.desc');
+  url.searchParams.set('limit', String(limit));
+  const r = await fetch(url, { headers: sbAuth });
+  if(!r.ok) return [];
+  return r.json();
+}
 
-    // --------- envío a backend ---------
-    async function send(text){
-      const reqId = ++currentReqId; clearError(); setTyping(true);
-      const controller = new AbortController(); const to = setTimeout(()=>controller.abort(), 30000);
-      try{
-        const res = await fetch('/api/chat',{
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ text, sessionId: sidGet() }),
-          signal: controller.signal
-        });
-        const raw = await res.text(); const json = safeJson(raw);
+// ---------- OpenAI ----------
+async function callOpenAI(userText, trendHints){
+  const sysBase = [
+    'Sos TempoChat, un acompañante breve y cálido.',
+    'Hablá en español rioplatense.',
+    'Evitá más de 6 oraciones por respuesta.',
+    'No reveles ni insinúes que existen “tendencias” o datos de otras personas.'
+  ].join(' ');
+  const sysTrends = trendHints?.length
+    ? `Pistas internas: ${trendHints.join(', ')}. Usalas solo si son pertinentes; nunca digas que son tendencias.`
+    : '';
 
-        // sesión expirada: reset y reintento único
-        if(res.status === 410 && !retriedAfter410){
-          retriedAfter410 = true;
-          await hardResetSession();
-          addMessage('system', 'Sesión renovada automáticamente. Podés continuar.');
-          return send(text);
-        }
+  const messages = [
+    { role:'system', content: `${sysBase} ${sysTrends}` },
+    { role:'user',   content: userText }
+  ];
 
-        if(reqId===currentReqId) setTyping(false);
-        if(!res.ok){ showError(json?.message || json?.error || raw); return; }
+  const r = await fetch(OPENAI_URL, {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json', 'Authorization': `Bearer ${OPENAI_API_KEY}` },
+    body: JSON.stringify({ model: OPENAI_MODEL, messages, temperature: 0.6 })
+  });
+  const txt = await r.text();
+  if(!r.ok) throw new Error(`openai_error: ${r.status} ${txt}`);
+  const j = JSON.parse(txt);
+  return j.choices?.[0]?.message?.content?.trim() || '';
+}
 
-        if(json.sessionId) sidSet(json.sessionId);
-        const reply = json.message || json.assistant || json.reply || json.output || raw;
-        addMessage('assistant', reply);
-      }catch(e){
-        if(reqId===currentReqId) setTyping(false);
-        showError(e?.name==='AbortError' ? 'timeout' : (e?.message||'error'));
-      }finally{ clearTimeout(to); }
+// ---------- Handler ----------
+export default async function handler(req, res){
+  if(req.method==='OPTIONS') return res.set(cors()).status(204).end();
+  res.set(cors());
+
+  try{
+    if(req.method!=='POST') return bad(res,'method_not_allowed','Use POST',405);
+    if(!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) return bad(res,'config','Supabase no configurado');
+    if(!OPENAI_API_KEY) return bad(res,'config','Falta OPENAI_API_KEY');
+
+    const body = typeof req.body==='object'? req.body : JSON.parse(req.body||'{}');
+    const text = (body.text||'').toString().trim();
+    let { sessionId } = body;
+    if(!text) return bad(res,'no_text','Texto vacío');
+
+    if(!sessionId) sessionId = newSessionId();
+    let ses = await sbGetSession(sessionId);
+    if(!ses) ses = await sbCreateSession(sessionId);
+
+    const now = Date.now();
+    const exp = new Date(ses.expires_at).getTime();
+    if(now > exp){
+      await sbEndSession(sessionId);
+      return bad(res,'session_expired','La sesión ya terminó. Iniciá una nueva.',410);
     }
 
-    // --------- cierre ----------
-    async function requestClose(source){
-      if(closing) return;
-      setClosing(true);
-      try{
-        if(source === 'manual'){ addMessage('user','Hagamos un cierre.'); }
-        else { addMessage('assistant','⏳ La sesión terminó. Preparando un cierre automático...'); }
-        const cierre = 'Generá un cierre breve con la conclusión principal y una reflexión de lo charlado.';
-        await send(cierre);
-        await endSessionOnServer();
-        sidClear();
-      }catch(e){ showError(e?.message||'error cierre'); }
-    }
+    // 1) Extraer tags locales y actualizar tendencias agregadas (SIN guardar texto)
+    const tags = extractTags(text);
+    if(tags.length) await sbIncTopics(tags);
 
-    // --------- timer (sin auto-extensión; con auto-cierre al final y tras +5) ----------
-    function startTimer(){
-      clearInterval(interval); updateTimer(); askedAtNine = false; retriedAfter410 = false;
-      interval = setInterval(async ()=>{
-        sessionSeconds = Math.max(sessionSeconds - 1, 0);
-        updateTimer();
+    // 2) Traer top tags como pistas internas
+    const top = await sbTopTags(5);
+    const trendHints = (top||[]).map(t => t.tag);
 
-        if(sessionSeconds===60 && !askedAtNine){
-          askedAtNine = true;
-          nudge.style.display = 'flex';
-          addMessage('assistant','Queda 1 minuto. ¿Sumamos 5 minutos o preferís cerrar con una conclusión/reflexión?');
-        }
+    // 3) Responder con OpenAI (texto no se persiste en ningún lado de tu BD)
+    const assistant = await callOpenAI(text, trendHints);
 
-        if(sessionSeconds===0){
-          clearInterval(interval);
-          nudge.style.display = 'none';
-          await requestClose('timeout'); // ← cierre automático, también después de extender
-        }
-      },1000);
-    }
+    // No logueamos texto (por privacidad). Si necesitás debug, logueá solo longitud:
+    // console.log({ len: text.length, tags });
 
-    function resetUI(){
-      chatlog.innerHTML = '<div class="system">Bienvenido a la demo. Tenés 10 minutos para conversar. Empezá escribiendo abajo 👇</div>';
-      sessionSeconds = 600; updateTimer(); setTyping(false); clearError();
-      input.disabled = false; btn.disabled = false; closingBanner.style.display = 'none';
-      closing = false; nudge.style.display = 'none';
-    }
-
-    async function hardResetSession(){
-      await endSessionOnServer(); sidClear(); resetUI(); startTimer();
-    }
-
-    // --------- inicio con contexto (nombre + objetivo + ánimo) ----------
-    async function startWithContext(){
-      const name = (fName.value||'').trim();
-      const goal = (fGoal.value||'').trim();
-      const mood = (fMood.value||'').trim();
-
-      if(!name && !goal && !mood){ input.focus(); return; }
-
-      const context = [
-        'Contexto del usuario:',
-        name ? `- Nombre: ${name}` : null,
-        goal ? `- Objetivo de la sesión: ${goal}` : null,
-        mood ? `- Estado de ánimo: ${mood}` : null,
-        '',
-        'Instrucciones para la apertura:',
-        name ? `- Saludá por el nombre (“${name}”).` : '- Saludá brevemente.',
-        '- Proponé 2 preguntas guía para avanzar.',
-        '- Armá una mini-agenda de 3 pasos para estos 10 minutos.',
-        '- Cerrá con 1 pregunta concreta para empezar.'
-      ].filter(Boolean).join('\n');
-
-      await send(context);
-      if(goal){ input.placeholder = `Ej.: ${goal} → contame en 1 frase qué sería un buen resultado`; }
-      input.focus();
-    }
-
-    // --------- eventos ----------
-    btn.addEventListener('click', ()=>{ const v=input.value.trim(); if(!v) return; addMessage('user', v); input.value=''; send(v); });
-    input.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ btn.click(); } });
-
-    btnStart.addEventListener('click', startWithContext);
-    [fName, fGoal, fMood].forEach(el => el.addEventListener('keydown', e => { if(e.key==='Enter') startWithContext(); }));
-
-    btnAddTime.addEventListener('click', async ()=>{
-      const resp = await extendSession(5);
-      if(resp && resp.expiresAt){
-        sessionSeconds += 5*60;      // extiende la cuenta regresiva
-        nudge.style.display = 'none'; // no volvemos a mostrar nudge
-        addMessage('system','Se agregaron 5 minutos. Haré un cierre automático al finalizar.');
-        // NOTA: no reponemos askedAtNine, así NO vuelve a aparecer el nudge en el +5
-      }
-    });
-
-    btnWrap.addEventListener('click', async ()=>{
-      nudge.style.display = 'none';
-      await requestClose('manual');
-    });
-
-    // --------- arranque limpio ----------
-    (async function boot(){ await hardResetSession(); fName.focus(); })();
-  </script>
-</body>
-</html>
+    return ok(res, { sessionId, message: assistant, expiresAt: ses.expires_at, tagsUsed: tags, version:'v-keywords-only' });
+  }catch(err){
+    return bad(res,'server_error', String(err?.message||err));
+  }
+}
