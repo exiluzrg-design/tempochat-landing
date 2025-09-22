@@ -184,7 +184,7 @@
       }catch(e){ showError(e?.message||'error cierre'); }
     }
 
-    // --------- timer (sin auto-extensión) ----------
+    // --------- timer (sin auto-extensión; con auto-cierre al final y tras +5) ----------
     function startTimer(){
       clearInterval(interval); updateTimer(); askedAtNine = false; retriedAfter410 = false;
       interval = setInterval(async ()=>{
@@ -200,7 +200,7 @@
         if(sessionSeconds===0){
           clearInterval(interval);
           nudge.style.display = 'none';
-          await requestClose('timeout');
+          await requestClose('timeout'); // ← cierre automático, también después de extender
         }
       },1000);
     }
@@ -252,9 +252,10 @@
     btnAddTime.addEventListener('click', async ()=>{
       const resp = await extendSession(5);
       if(resp && resp.expiresAt){
-        sessionSeconds += 5*60;
-        nudge.style.display = 'none';
-        addMessage('system','Se agregaron 5 minutos a la sesión.');
+        sessionSeconds += 5*60;      // extiende la cuenta regresiva
+        nudge.style.display = 'none'; // no volvemos a mostrar nudge
+        addMessage('system','Se agregaron 5 minutos. Haré un cierre automático al finalizar.');
+        // NOTA: no reponemos askedAtNine, así NO vuelve a aparecer el nudge en el +5
       }
     });
 
