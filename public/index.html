@@ -1,8 +1,9 @@
-// Runtime: Vercel Node 20.x
+// api/chat.js
+// Runtime: Next.js (Vercel) Node 20
 // PRIVACIDAD: no se guarda texto de usuarios en la base.
 // Solo se guardan palabras clave agregadas (analytics_topics) vía RPC inc_topics().
 
-const OPENAI_URL = process.env.OPENAI_URL || 'https://api.openai.com/v1/chat/completions';
+const OPENAI_URL   = process.env.OPENAI_URL   || 'https://api.openai.com/v1/chat/completions';
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
@@ -15,13 +16,39 @@ const RPC_INC  = `${SUPABASE_URL}/rest/v1/rpc/inc_topics`;
 
 const T_SESSION_MIN = parseInt(process.env.SESSION_MIN || '10', 10);
 
-function cors(){ return { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods':'GET,POST,OPTIONS', 'Access-Control-Allow-Headers':'Content-Type,Authorization' }; }
-const sbAuth = { 'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` };
-function ok(res, data){ return res.status(200).json(data); }
-function bad(res, code, message, status=400){ return res.status(status).json({ error: code, message }); }
-function newSessionId(){ return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=(Math.random()*16)|0,v=c==='x'?r:(r&0x3|0x8);return v.toString(16)}); }
+// ---------- helpers ----------
+function corsHeaders(){
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type,Authorization'
+  };
+}
+function setCORS(res){
+  const h = corsHeaders();
+  for (const k in h) res.setHeader(k, h[k]);
+}
+function ok(res, data){
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  return res.status(200).end(JSON.stringify(data));
+}
+function bad(res, code, message, status=400){
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  return res.status(status).end(JSON.stringify({ error: code, message }));
+}
+function newSessionId(){
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c=>{
+    const r = (Math.random()*16)|0, v = c==='x'? r : (r&0x3|0x8);
+    return v.toString(16);
+  });
+}
+const sbAuth = {
+  'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+  'apikey': SUPABASE_SERVICE_ROLE_KEY,
+  'Accept': 'application/json'
+};
 
-// ---------- Sesiones (solo id/expiración, sin texto) ----------
+// ---------- sesiones (solo id/expiración, sin texto) ----------
 async function sbGetSession(sessionId){
   const url = new URL(SESSIONS);
   url.searchParams.set('select','session_id,expires_at,started_at');
@@ -34,7 +61,11 @@ async function sbGetSession(sessionId){
 async function sbCreateSession(sessionId){
   const expiresAt = new Date(Date.now() + T_SESSION_MIN*60*1000).toISOString();
   const payload = { session_id: sessionId, expires_at: expiresAt };
-  const r = await fetch(SESSIONS, { method:'POST', headers:{...sbAuth, 'Content-Type':'application/json', 'Prefer':'return=representation'}, body: JSON.stringify(payload) });
+  const r = await fetch(SESSIONS, {
+    method:'POST',
+    headers:{...sbAuth, 'Content-Type':'application/json', 'Prefer':'return=representation'},
+    body: JSON.stringify(payload)
+  });
   if(!r.ok) throw new Error(`create_session_failed: ${r.status} ${await r.text()}`);
   return (await r.json())[0];
 }
@@ -42,7 +73,7 @@ async function sbEndSession(sessionId){
   await fetch(`${SESSIONS}?session_id=eq.${sessionId}`, { method:'DELETE', headers: sbAuth });
 }
 
-// ---------- Tags (solo palabras clave agregadas, sin PII) ----------
+// ---------- tags (solo palabras clave agregadas, sin PII) ----------
 const TAGS = [
   { tag:'infidelidad', rx: /(infidelidad|infiel|engaño|cuernos?|traici[oó]n)/i },
   { tag:'pareja',      rx: /(pareja|novi[oa]|matrimonio|relaci[oó]n)/i },
@@ -118,17 +149,17 @@ async function callOpenAI(userText, trendHints){
   return j.choices?.[0]?.message?.content?.trim() || '';
 }
 
-// ---------- Handler ----------
+// ---------- handler ----------
 export default async function handler(req, res){
-  if(req.method==='OPTIONS') return res.set(cors()).status(204).end();
-  res.set(cors());
+  setCORS(res);
+  if(req.method === 'OPTIONS') return res.status(204).end();
 
   try{
-    if(req.method!=='POST') return bad(res,'method_not_allowed','Use POST',405);
+    if(req.method !== 'POST') return bad(res,'method_not_allowed','Use POST',405);
     if(!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) return bad(res,'config','Supabase no configurado');
     if(!OPENAI_API_KEY) return bad(res,'config','Falta OPENAI_API_KEY');
 
-    const body = typeof req.body==='object'? req.body : JSON.parse(req.body||'{}');
+    const body = typeof req.body === 'object' ? req.body : JSON.parse(req.body||'{}');
     const text = (body.text||'').toString().trim();
     let { sessionId } = body;
     if(!text) return bad(res,'no_text','Texto vacío');
@@ -144,21 +175,24 @@ export default async function handler(req, res){
       return bad(res,'session_expired','La sesión ya terminó. Iniciá una nueva.',410);
     }
 
-    // 1) Extraer tags locales y actualizar tendencias agregadas (SIN guardar texto)
+    // 1) Extraer tags y actualizar tendencias (SIN guardar texto)
     const tags = extractTags(text);
     if(tags.length) await sbIncTopics(tags);
 
-    // 2) Traer top tags como pistas internas
+    // 2) Top tags como pistas internas
     const top = await sbTopTags(5);
     const trendHints = (top||[]).map(t => t.tag);
 
-    // 3) Responder con OpenAI (texto no se persiste en ningún lado de tu BD)
+    // 3) OpenAI (el texto NO se persiste en tu BD)
     const assistant = await callOpenAI(text, trendHints);
 
-    // No logueamos texto (por privacidad). Si necesitás debug, logueá solo longitud:
-    // console.log({ len: text.length, tags });
-
-    return ok(res, { sessionId, message: assistant, expiresAt: ses.expires_at, tagsUsed: tags, version:'v-keywords-only' });
+    return ok(res, {
+      sessionId,
+      message: assistant,
+      expiresAt: ses.expires_at,
+      tagsUsed: tags,
+      version: 'v-keywords-only-fix'
+    });
   }catch(err){
     return bad(res,'server_error', String(err?.message||err));
   }
