@@ -93,19 +93,19 @@
 
     let sessionSeconds = 600; // 10 minutos
     let interval; let askedAtNine = false;
-    let closing = false;       // evita cierres duplicados
+    let closing = false;
     let retriedAfter410 = false;
 
-    // Autosend (sube automáticamente el texto del chat)
+    // Autosend
     let autosendTimer = null;
-    const AUTOSEND_MS = 1700;             // pausa de 1.7s sin tipear
-    const AUTOSEND_MIN_CHARS = 6;         // mínimo de caracteres
-    const AUTOSEND_ENDING = /[.!?…)]$/;   // o termina en signo/punto
+    const AUTOSEND_MS = 1700;
+    const AUTOSEND_MIN_CHARS = 6;
+    const AUTOSEND_ENDING = /[.!?…)]$/;
 
-    // Apertura automática: SOLO nombre + cómo se siente
+    // Apertura automática: solo nombre + cómo se siente (SIN agenda de 3 pasos)
     const OPENING_PROMPT = [
       'Abrí la sesión saludando y pedí dos datos: (1) nombre y (2) cómo se siente en una palabra.',
-      'Respondé breve (≤4 oraciones), proponé una mini-agenda de 3 pasos para aprovechar los 10 minutos y cerrá con una pregunta concreta.',
+      'Respondé breve (≤4 oraciones) y cerrá con una pregunta concreta para empezar.',
       'Usá un tono cálido y rioplatense.'
     ].join(' ');
 
@@ -146,7 +146,6 @@
         });
         const raw = await res.text(); const json = safeJson(raw);
 
-        // sesión expirada: reset y reintento único
         if(res.status === 410 && !retriedAfter410){
           retriedAfter410 = true;
           await hardResetSession();
@@ -180,7 +179,7 @@
       }catch(e){ showError(e?.message||'error cierre'); }
     }
 
-    // --------- timer (sin auto-extensión; con nudge a los 9m y auto-cierre al final/tras +5) ----------
+    // --------- timer ----------
     function startTimer(){
       clearInterval(interval); updateTimer(); askedAtNine = false; retriedAfter410 = false;
       interval = setInterval(async ()=>{
@@ -196,7 +195,7 @@
         if(sessionSeconds===0){
           clearInterval(interval);
           nudge.style.display = 'none';
-          await requestClose('timeout'); // cierre automático (también después de extender)
+          await requestClose('timeout');
         }
       },1000);
     }
@@ -212,7 +211,7 @@
       await endSessionOnServer(); sidClear(); resetUI(); startTimer();
     }
 
-    // --------- AUTOSEND: sube el texto automáticamente ----------
+    // --------- AUTOSEND ----------
     function scheduleAutosend(){
       if(autosendTimer) clearTimeout(autosendTimer);
       autosendTimer = setTimeout(()=>{
@@ -238,10 +237,9 @@
     btnAddTime.addEventListener('click', async ()=>{
       const resp = await extendSession(5);
       if(resp && resp.expiresAt){
-        sessionSeconds += 5*60;      // extiende la cuenta regresiva
-        nudge.style.display = 'none'; // no volvemos a mostrar nudge
+        sessionSeconds += 5*60;
+        nudge.style.display = 'none';
         addMessage('system','Se agregaron 5 minutos. Haré un cierre automático al finalizar.');
-        // NOTA: no reponemos askedAtNine, así NO vuelve a aparecer el nudge en el +5
       }
     });
 
@@ -250,7 +248,7 @@
       await requestClose('manual');
     });
 
-    // --------- arranque limpio + apertura automática (nombre + cómo se siente) ----------
+    // --------- arranque ----------
     (async function boot(){
       await hardResetSession();
       await send(OPENING_PROMPT);
