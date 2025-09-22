@@ -6,36 +6,34 @@
   <title>TempoChat — charlas privadas en 10 minutos</title>
   <meta name="description" content="Sesiones privadas de 10 minutos, sin registro, 24/7 y con memoria de conversación. Privacidad real y foco en lo que necesitás ahora." />
   <style>
-    :root{
-      --bg:#0b0b0c;--panel:#141417;--panel-2:#101013;--text:#e8e8ec;--muted:#a7a7b2;--line:#222227;--brand:#2f81f7;
-    }
-    *{box-sizing:border-box}
-    html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
-    .wrap{max-width:1080px;margin:0 auto;padding:24px}
-    header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid var(--line)}
-    .brand{display:flex;align-items:center;gap:10px}
-    .logo{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--brand),#7aa5ff)}
+    :root{ --bg:#0b0b0c; --panel:#141417; --panel-2:#101013; --text:#e8e8ec; --muted:#a7a7b2; --line:#222227; --brand:#2f81f7; }
+    *{ box-sizing:border-box }
+    html,body{ margin:0; padding:0; background:var(--bg); color:var(--text); font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif }
+    .wrap{ max-width:1080px; margin:0 auto; padding:24px }
+    header{ display:flex; align-items:center; justify-content:space-between; gap:16px; padding:12px 0; border-bottom:1px solid var(--line) }
+    .brand{ display:flex; align-items:center; gap:10px }
+    .logo{ width:28px; height:28px; border-radius:8px; background:linear-gradient(135deg,var(--brand),#7aa5ff) }
 
-    .hero{padding:28px 0}
-    .hero h1{font-size:clamp(28px,4vw,44px);line-height:1.1;margin:0 0 10px}
-    .hero p{color:var(--muted);margin:0 0 18px}
-    .btn{background:var(--brand);color:#fff;border:none;border-radius:12px;padding:12px 16px;cursor:pointer}
+    .hero{ padding:28px 0 }
+    .hero h1{ font-size:clamp(28px,4vw,44px); line-height:1.1; margin:0 0 10px }
+    .hero p{ color:var(--muted); margin:0 0 18px }
+    .btn{ background:var(--brand); color:#fff; border:none; border-radius:12px; padding:12px 16px; cursor:pointer }
 
-    .chat{display:flex;flex-direction:column;height:420px}
-    .chatlog{flex:1;overflow:auto;border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--panel-2)}
-    .msg{max-width:80%;padding:10px 14px;border-radius:14px;margin:6px 0;line-height:1.45}
-    .user{background:#2b2b34;margin-left:auto;border-bottom-right-radius:4px}
-    .assistant{background:#1b1b20;margin-right:auto;border-bottom-left-radius:4px}
-    .sys{color:var(--muted);text-align:center;margin:4px 0}
-    .typing{display:none;color:var(--muted);margin-top:6px}
-    .row{display:flex;gap:8px;margin-top:10px}
-    input,button{font:inherit}
-    input{flex:1;background:#121216;color:var(--text);border:1px solid var(--line);border-radius:12px;padding:10px}
-    button{background:var(--brand);color:#fff;border:none;border-radius:12px;padding:10px 14px;cursor:pointer}
-    .error{color:#ff7a7a;font-size:13px;margin-top:6px;display:none}
-    .timer{font-size:14px;color:var(--muted);margin:6px 0;text-align:center}
-    .nudge{display:none;gap:8px;justify-content:center;margin:6px 0}
-    .nudge button{padding:6px 12px;font-size:14px}
+    .chat{ display:flex; flex-direction:column; height:460px }
+    .chatlog{ flex:1; overflow:auto; border:1px solid var(--line); border-radius:12px; padding:10px; background:var(--panel-2) }
+    .msg{ max-width:80%; padding:10px 14px; border-radius:14px; margin:6px 0; line-height:1.45 }
+    .user{ background:#2b2b34; margin-left:auto; border-bottom-right-radius:4px }
+    .assistant{ background:#1b1b20; margin-right:auto; border-bottom-left-radius:4px }
+    .system{ color:var(--muted); text-align:center; margin:4px 0 }
+    .typing{ display:none; color:var(--muted); margin:6px 0 }
+    .row{ display:flex; gap:8px; margin-top:10px }
+    input,button{ font:inherit }
+    input{ flex:1; background:#121216; color:var(--text); border:1px solid var(--line); border-radius:12px; padding:10px }
+    button{ background:var(--brand); color:#fff; border:none; border-radius:12px; padding:10px 14px; cursor:pointer }
+    .error{ color:#ff7a7a; font-size:13px; margin-top:6px; display:none }
+    .timer{ font-size:14px; color:var(--muted); margin:6px 0; text-align:center }
+    .nudge{ display:none; gap:8px; justify-content:center; margin:6px 0 }
+    .ghost{ background:transparent; border:1px solid var(--line); color:var(--text) }
   </style>
 </head>
 <body>
@@ -53,13 +51,13 @@
     <section>
       <div class="chat">
         <div class="chatlog" id="chatlog">
-          <div class="sys">Bienvenido a la demo. Tenés 10 minutos para conversar. Empezá escribiendo abajo 👇</div>
+          <div class="system">Bienvenido a la demo. Tenés 10 minutos para conversar. Empezá escribiendo abajo 👇</div>
         </div>
         <div class="timer" id="timer">Tiempo restante: 10:00</div>
-        <div class="sys" id="sidLine" style="text-align:center;font-size:12px">sessionId: <span id="sid">(ninguno)</span></div>
+        <div class="system" id="sidLine" style="text-align:center;font-size:12px">sessionId: <span id="sid">(ninguno)</span></div>
         <div class="nudge" id="nudge">
-          <button id="addTime">Agregar 5′</button>
-          <button id="wrapUp">Vamos cerrando</button>
+          <button class="btn" id="addTime">Agregar 5′</button>
+          <button class="btn ghost" id="wrapUp">Vamos cerrando</button>
         </div>
         <div class="typing" id="typing">⏳ escribiendo…</div>
         <div class="error" id="error"></div>
@@ -72,6 +70,9 @@
   </div>
 
   <script>
+    // NO borramos el sessionId al cargar (para mantener memoria)
+
+    // Elementos
     let currentReqId = 0;
     const $ = (id) => document.getElementById(id);
     const chatlog = $('chatlog');
@@ -85,78 +86,83 @@
     const btnWrap = $('wrapUp');
     const sidEl = $('sid');
 
+    // Temporizador
     let sessionSeconds = 600; // 10 minutos
-    let interval;
-    let askedAtNine = false;
+    let interval; let askedAtNine = false;
 
-    // Mostrar sessionId actual si existe
-    if (sidEl) sidEl.textContent = getSessionId() || '(ninguno)';
-
+    function fmt(t){ const m=Math.floor(t/60); const s=String(t%60).padStart(2,'0'); return `${m}:${s}`; }
+    function updateTimer(){ timerEl.textContent = `Tiempo restante: ${fmt(sessionSeconds)}`; }
     function startTimer(){
-      clearInterval(interval);
+      clearInterval(interval); updateTimer();
       interval = setInterval(()=>{
-        sessionSeconds--;
-        const m = String(Math.floor(sessionSeconds/60)).padStart(2,'0');
-        const s = String(sessionSeconds%60).padStart(2,'0');
-        timerEl.textContent = `Tiempo restante: ${m}:${s}`;
+        sessionSeconds = Math.max(sessionSeconds - 1, 0);
+        updateTimer();
         if(sessionSeconds===60 && !askedAtNine){
           askedAtNine = true;
           nudge.style.display = 'flex';
+          addMessage('assistant','Queda 1 minuto. ¿Sumamos 5 minutos o preferís cerrar con una conclusión/reflexión?');
         }
-        if(sessionSeconds<=0){
+        if(sessionSeconds===0){
           clearInterval(interval);
-          addMessage('assistant','⏰ La sesión llegó a su fin. Gracias por la charla.');
+          nudge.style.display = 'none';
+          addMessage('assistant','La sesión llegó a su fin. Gracias por la charla.');
           input.disabled = true; btn.disabled = true;
-          nudge.style.display='none';
         }
       },1000);
     }
     startTimer();
 
+    // Utilidades UI
     function setTyping(on){ typing.style.display = on ? 'block' : 'none'; }
     function showError(msg){ errorBox.style.display='block'; errorBox.textContent = typeof msg==='string'? msg : JSON.stringify(msg); }
     function clearError(){ errorBox.style.display='none'; errorBox.textContent=''; }
-    function addMessage(role,text){
-      const d=document.createElement('div'); d.className='msg '+role; d.textContent=String(text||''); chatlog.appendChild(d); chatlog.scrollTop = chatlog.scrollHeight;
-    }
+    function addMessage(role,text){ const d=document.createElement('div'); d.className='msg '+role; d.textContent=String(text||''); chatlog.appendChild(d); chatlog.scrollTop = chatlog.scrollHeight; }
+
+    // Sesión (frontend)
     function getSessionId(){ return localStorage.getItem('tempochat.sid') || ''; }
     function setSessionId(id){ if(id){ localStorage.setItem('tempochat.sid', id); if (sidEl) sidEl.textContent = id; } }
     function safeJson(t){ try{ return JSON.parse(t); }catch{ return { raw:t }; } }
 
+    // Mostrar sessionId actual si existe
+    if (sidEl) sidEl.textContent = getSessionId() || '(ninguno)';
+
+    // Backend call
     async function send(text){
-      const reqId = ++currentReqId;
-      clearError(); setTyping(true);
-      const controller = new AbortController();
-      const t = setTimeout(()=>controller.abort(), 30000);
+      const reqId = ++currentReqId; clearError(); setTyping(true);
+      const controller = new AbortController(); const to = setTimeout(()=>controller.abort(), 30000);
       try{
         const res = await fetch('/api/chat',{
           method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ text, sessionId: getSessionId() }), signal: controller.signal
         });
-        const raw = await res.text();
-        const json = safeJson(raw);
+        const raw = await res.text(); const json = safeJson(raw);
         if(reqId===currentReqId) setTyping(false);
         if(!res.ok){ showError(json?.message || json?.error || raw); return; }
         const reply = json.message || json.assistant || json.reply || json.output || raw;
         if(json.sessionId) setSessionId(json.sessionId);
         addMessage('assistant', reply);
       }catch(e){ if(reqId===currentReqId) setTyping(false); showError(e?.name==='AbortError' ? 'timeout' : (e?.message||'error')); }
-      finally{ clearTimeout(t); }
+      finally{ clearTimeout(to); }
     }
 
-    btn.addEventListener('click', ()=>{
-      const v=input.value.trim(); if(!v) return; addMessage('user', v); input.value=''; send(v);
-    });
+    // Envío
+    btn.addEventListener('click', ()=>{ const v=input.value.trim(); if(!v) return; addMessage('user', v); input.value=''; send(v); });
     input.addEventListener('keydown', (e)=>{ if(e.key==='Enter') btn.click(); });
 
-    // Nudge actions
+    // Acciones minuto 9
     btnAddTime.addEventListener('click', ()=>{
-      sessionSeconds += 300; // +5 min
-      nudge.style.display='none';
-      addMessage('system','⏱️ Se agregaron 5 minutos a la sesión.');
+      sessionSeconds += 5*60; // +5 minutos
+      nudge.style.display = 'none';
+      addMessage('system','Se agregaron 5 minutos a la sesión.');
+      // Extender sesión en backend (mantener memoria)
+      fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'extend', minutes: 5, sessionId: getSessionId() })
+      });
     });
     btnWrap.addEventListener('click', ()=>{
-      nudge.style.display='none';
-      const cierre = 'Estamos llegando al final. Hagamos un cierre breve con una conclusión clara y una reflexión de lo charlado.';
+      nudge.style.display = 'none';
+      const cierre = 'Estamos llegando al final de la sesión. Hagamos un cierre breve con una conclusión clara y una reflexión de lo charlado.';
       addMessage('user','Hagamos un cierre.');
       send(cierre);
     });
