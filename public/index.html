@@ -54,7 +54,6 @@
           <div class="system">Bienvenido a la demo. Tenés 10 minutos para conversar. Empezá escribiendo abajo 👇</div>
         </div>
         <div class="timer" id="timer">Tiempo restante: 10:00</div>
-        <div class="system" id="sidLine" style="text-align:center;font-size:12px">sessionId: <span id="sid">(ninguno)</span></div>
         <div class="nudge" id="nudge">
           <button class="btn" id="addTime">Agregar 5′</button>
           <button class="btn ghost" id="wrapUp">Vamos cerrando</button>
@@ -70,8 +69,6 @@
   </div>
 
   <script>
-    // NO borramos el sessionId al cargar (para mantener memoria)
-
     // Elementos
     let currentReqId = 0;
     const $ = (id) => document.getElementById(id);
@@ -84,7 +81,6 @@
     const nudge = $('nudge');
     const btnAddTime = $('addTime');
     const btnWrap = $('wrapUp');
-    const sidEl = $('sid');
 
     // Temporizador
     let sessionSeconds = 600; // 10 minutos
@@ -120,11 +116,8 @@
 
     // Sesión (frontend)
     function getSessionId(){ return localStorage.getItem('tempochat.sid') || ''; }
-    function setSessionId(id){ if(id){ localStorage.setItem('tempochat.sid', id); if (sidEl) sidEl.textContent = id; } }
+    function setSessionId(id){ if(id) localStorage.setItem('tempochat.sid', id); }
     function safeJson(t){ try{ return JSON.parse(t); }catch{ return { raw:t }; } }
-
-    // Mostrar sessionId actual si existe
-    if (sidEl) sidEl.textContent = getSessionId() || '(ninguno)';
 
     // Backend call
     async function send(text){
@@ -153,12 +146,6 @@
       sessionSeconds += 5*60; // +5 minutos
       nudge.style.display = 'none';
       addMessage('system','Se agregaron 5 minutos a la sesión.');
-      // Extender sesión en backend (mantener memoria)
-      fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'extend', minutes: 5, sessionId: getSessionId() })
-      });
     });
     btnWrap.addEventListener('click', ()=>{
       nudge.style.display = 'none';
