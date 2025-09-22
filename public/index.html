@@ -124,6 +124,16 @@
     function ensureSessionId(){
       let id = getSessionId();
       if(!id){
+        const hasUUID = typeof crypto !== 'undefined' && crypto && typeof crypto.randomUUID === 'function';
+        id = hasUUID
+          ? crypto.randomUUID()
+          : ('sid_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,10));
+        setSessionId(id);
+      }
+      return id;
+    }{
+      let id = getSessionId();
+      if(!id){
         id = (crypto && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).slice(2);
         setSessionId(id);
       }
