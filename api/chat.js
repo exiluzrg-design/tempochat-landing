@@ -8,12 +8,10 @@ const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-// ---- Configuración de memoria y generación ----
-const MAX_HISTORY_MESSAGES = 20;          // cuántos mensajes anteriores reenvías a OpenAI
-const MAX_RESPONSE_TOKENS = 400;          // tope de tokens de salida del modelo
+const MAX_HISTORY_MESSAGES = 20;
+const MAX_RESPONSE_TOKENS = 400;
 const TEMPERATURE = 0.7;
 
-// Prompt de sistema para “marcar” el tono de TempoChat
 const SYSTEM_PROMPT = `
 Eres TempoChat: un asistente breve, cálido y directo.
 - Responde en español rioplatense.
@@ -28,7 +26,6 @@ export default async function handler(req, res) {
       return res.status(405).json({ ok: false, error: 'method_not_allowed' });
     }
 
-    // Body robusto (acepta userText | message | text)
     let body = req.body;
     if (typeof body === 'string') {
       try { body = JSON.parse(body); } catch { body = {}; }
@@ -43,23 +40,19 @@ export default async function handler(req, res) {
       return res.status(500).json({ ok: false, error: 'no_api_key', message: 'Falta OPENAI_API_KEY' });
     }
 
-    // Supabase opcional (si falta env, responde sin memoria persistente)
     const supabase = (SUPABASE_URL && SERVICE_KEY)
       ? createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } })
       : null;
 
-    // sessionId si no vino del cliente
     if (!sessionId) {
       const { randomUUID } = await import('crypto');
       sessionId = randomUUID();
     }
 
-    // 1) Guardar mensaje del usuario
     if (supabase) {
       await supabase.from('messages').insert({ session_id: sessionId, role: 'user', content: userText });
     }
 
-    // 2) Cargar historial (limitado)
     let history = [];
     if (supabase) {
       const { data, error } = await supabase
@@ -73,14 +66,12 @@ export default async function handler(req, res) {
       }
     }
 
-    // 3) Armar messages[] para OpenAI (system + history + user actual)
     const messages = [
       { role: 'system', content: SYSTEM_PROMPT },
-      ...history,                                      // ya incluye los user/assistant previos
-      { role: 'user', content: userText },             // mensaje actual
+      ...history,
+      { role: 'user', content: userText },
     ];
 
-    // 4) Llamar a OpenAI
     const openaiResp = await fetch(OPENAI_URL, {
       method: 'POST',
       headers: {
@@ -95,35 +86,48 @@ export default async function handler(req, res) {
       })
     });
 
-    // Manejo de errores de OpenAI (cuota, etc.)
+    const rawText = await openaiResp.text();
+    console.log('OpenAI raw response:', rawText);
+
     if (!openaiResp.ok) {
-      const errText = await openaiResp.text().catch(() => '');
-      // Guardar un “fallback” corto para que el usuario no quede sin respuesta
-      const fallback = 'Perdón, hubo un problema al generar la respuesta. Probá de nuevo en un momento.';
-      if (supabase) {
-        await supabase.from('messages').insert({ session_id: sessionId, role: 'assistant', content: fallback });
-      }
       return res.status(502).json({
         ok: false,
         error: 'openai_error',
-        detail: errText || `HTTP ${openaiResp.status}`,
-        message: fallback,
+        status: openaiResp.status,
+        body: rawText,
         sessionId
       });
     }
 
-    const json = await openaiResp.json();
-    const assistantText = json?.choices?.[0]?.message?.content?.trim() || '...';
+    let json;
+    try {
+      json = JSON.parse(rawText);
+    } catch (err) {
+      return res.status(502).json({
+        ok: false,
+        error: 'invalid_json',
+        body: rawText,
+        sessionId
+      });
+    }
 
-    // 5) Guardar respuesta del asistente
+    const assistantText = json?.choices?.[0]?.message?.content?.trim();
+    if (!assistantText) {
+      return res.status(502).json({
+        ok: false,
+        error: 'no_content',
+        body: json,
+        sessionId
+      });
+    }
+
     if (supabase) {
       await supabase.from('messages').insert({ session_id: sessionId, role: 'assistant', content: assistantText });
     }
 
-    // 6) Devolver al frontend
     return res.status(200).json({ ok: true, sessionId, message: assistantText });
   } catch (e) {
     console.error('[chat handler]', e);
-    return res.status(500).json({ ok: false, error: 'server_error' });
+    return res.status(500).json({ ok: false, error: 'server_error', detail: e.message });
   }
 }
