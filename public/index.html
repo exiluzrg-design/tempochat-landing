@@ -18,7 +18,12 @@
     .hero h1{ font-size:clamp(28px,4vw,44px); line-height:1.1; margin:0 0 10px }
     .hero p{ color:var(--muted); margin:0 0 18px }
 
-    .chat{ display:flex; flex-direction:column; height:460px }
+    /* Setup card */
+    .setup{ background:var(--panel-2); border:1px solid var(--line); border-radius:12px; padding:12px; display:flex; flex-wrap:wrap; gap:8px; align-items:center }
+    .setup input{ background:#121216; color:var(--text); border:1px solid var(--line); border-radius:10px; padding:10px; flex:1; min-width:200px }
+    .setup .btn{ background:var(--brand); color:#fff; border:none; border-radius:12px; padding:10px 14px; cursor:pointer; white-space:nowrap }
+
+    .chat{ display:flex; flex-direction:column; height:460px; margin-top:12px }
     .chatlog{ flex:1; overflow:auto; border:1px solid var(--line); border-radius:12px; padding:10px; background:var(--panel-2) }
     .msg{ max-width:80%; padding:10px 14px; border-radius:14px; margin:6px 0; line-height:1.45 }
     .user{ background:#2b2b34; margin-left:auto; border-bottom-right-radius:4px }
@@ -27,10 +32,14 @@
     .typing{ display:none; color:var(--muted); margin:6px 0 }
     .row{ display:flex; gap:8px; margin-top:10px }
     input,button{ font:inherit }
-    input{ flex:1; background:#121216; color:var(--text); border:1px solid var(--line); border-radius:12px; padding:10px }
-    button{ background:var(--brand); color:#fff; border:none; border-radius:12px; padding:10px 14px; cursor:pointer }
+    .row input{ flex:1; background:#121216; color:var(--text); border:1px solid var(--line); border-radius:12px; padding:10px }
+    .row button{ background:var(--brand); color:#fff; border:none; border-radius:12px; padding:10px 14px; cursor:pointer }
     .error{ color:#ff7a7a; font-size:13px; margin-top:6px; display:none }
     .timer{ font-size:14px; color:var(--muted); margin:6px 0; text-align:center }
+
+    /* Nudge minuto 9 */
+    .nudge{ display:none; gap:8px; justify-content:center; margin:6px 0 }
+    .ghost{ background:transparent; border:1px solid var(--line); color:var(--text) }
 
     /* Banner de cierre */
     .closing-banner{ position:fixed; left:0; right:0; bottom:20px; margin:0 auto; max-width:1080px; background:#1b1b20; border:1px solid var(--line); border-radius:12px; padding:10px 14px; color:var(--muted); text-align:center; display:none; box-shadow:0 8px 24px rgba(0,0,0,.3); }
@@ -44,7 +53,15 @@
 
     <section class="hero">
       <h1>Charlas privadas de 10 minutos</h1>
-      <p>Un espacio breve y seguro para ordenar ideas y salir con un próximo paso claro.</p>
+      <p>Decime tu <strong>nombre</strong> y <strong>qué querés lograr hoy</strong>. Arrancamos con foco y un mini-plan.</p>
+
+      <!-- SETUP: nombre + objetivo (+ ánimo opcional) -->
+      <div class="setup">
+        <input id="name" placeholder="Tu nombre (ej: Nicolás)" />
+        <input id="goal" placeholder="¿Qué querés lograr en 10 minutos?" />
+        <input id="mood" placeholder="Estado de ánimo (opcional: ansioso, confundido…)" />
+        <button class="btn" id="start">Empezar</button>
+      </div>
     </section>
 
     <section>
@@ -53,6 +70,13 @@
           <div class="system">Bienvenido a la demo. Tenés 10 minutos para conversar. Empezá escribiendo abajo 👇</div>
         </div>
         <div class="timer" id="timer">Tiempo restante: 10:00</div>
+
+        <!-- Nudge: opciones a los 9 minutos -->
+        <div class="nudge" id="nudge">
+          <button class="btn" id="addTime">Agregar 5′</button>
+          <button class="btn ghost" id="wrapUp">Vamos cerrando</button>
+        </div>
+
         <div class="typing" id="typing">⏳ escribiendo…</div>
         <div class="error" id="error"></div>
         <div class="row">
@@ -75,13 +99,18 @@
     const input = $('msg');
     const btn = $('send');
     const timerEl = $('timer');
+    const nudge = $('nudge');
+    const btnAddTime = $('addTime');
+    const btnWrap = $('wrapUp');
     const closingBanner = $('closingBanner');
+    const fName = $('name');
+    const fGoal = $('goal');
+    const fMood = $('mood');
+    const btnStart = $('start');
 
     let sessionSeconds = 600; // 10 minutos
     let interval; let askedAtNine = false;
     let closing = false;       // evita cierres duplicados
-    let lastActivity = Date.now();
-    let lastUserMessageForRetry = null; // para reintentar tras 410 una sola vez
     let retriedAfter410 = false;
 
     // --------- helpers UI ----------
@@ -91,110 +120,87 @@
     function showError(msg){ errorBox.style.display='block'; errorBox.textContent = typeof msg==='string'? msg : JSON.stringify(msg); }
     function clearError(){ errorBox.style.display='none'; errorBox.textContent=''; }
     function addMessage(role,text){ const d=document.createElement('div'); d.className='msg '+role; d.textContent=String(text||''); chatlog.appendChild(d); chatlog.scrollTop = chatlog.scrollHeight; }
-    function setClosing(on){
-      closing = on;
-      closingBanner.style.display = on ? 'block' : 'none';
-      input.disabled = on; btn.disabled = on;
-    }
+    function setClosing(on){ closing = on; closingBanner.style.display = on ? 'block' : 'none'; input.disabled = on; btn.disabled = on; nudge.style.display = 'none'; }
 
     // --------- sesión local ----------
-    function getSessionId(){ return localStorage.getItem('tempochat.sid') || ''; }
-    function setSessionId(id){ if(id) localStorage.setItem('tempochat.sid', id); }
-    function clearSessionId(){ localStorage.removeItem('tempochat.sid'); }
-
-    // --------- red ----------
+    function sidGet(){ return localStorage.getItem('tempochat.sid') || ''; }
+    function sidSet(v){ if(v) localStorage.setItem('tempochat.sid', v); }
+    function sidClear(){ localStorage.removeItem('tempochat.sid'); }
     function safeJson(t){ try{ return JSON.parse(t); }catch{ return { raw:t }; } }
 
+    // --------- red ----------
     async function endSessionOnServer(){
-      const sid = getSessionId(); if(!sid) return;
-      try{
-        await fetch('/api/session',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ op:'end', sessionId: sid }) });
-      }catch{}
+      const sid = sidGet(); if(!sid) return;
+      try{ await fetch('/api/session',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ op:'end', sessionId: sid }) }); }catch{}
     }
-
     async function extendSession(minutes=5){
-      const r = await fetch('/api/session',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ op:'extend', sessionId: getSessionId(), minutes }) });
-      if(!r.ok) return null;
-      return r.json();
+      const r = await fetch('/api/session',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ op:'extend', sessionId: sidGet(), minutes }) });
+      if(!r.ok) return null; return r.json();
     }
 
-    // --------- flujo: enviar ---------
+    // --------- envío a backend ---------
     async function send(text){
-      lastActivity = Date.now();
-      lastUserMessageForRetry = text;
-
       const reqId = ++currentReqId; clearError(); setTyping(true);
       const controller = new AbortController(); const to = setTimeout(()=>controller.abort(), 30000);
-
       try{
         const res = await fetch('/api/chat',{
           method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ text, sessionId: getSessionId() }),
+          body: JSON.stringify({ text, sessionId: sidGet() }),
           signal: controller.signal
         });
-
         const raw = await res.text(); const json = safeJson(raw);
 
-        // manejo 410: sesión vencida -> reset y reintento 1 vez
+        // sesión expirada: reset y reintento único
         if(res.status === 410 && !retriedAfter410){
           retriedAfter410 = true;
-          await hardResetSession();      // limpia server + local + UI (mantiene mensaje en input)
-          addMessage('system', 'Sesión renovada automáticamente.');
-          return send(text);             // reintenta una sola vez
+          await hardResetSession();
+          addMessage('system', 'Sesión renovada automáticamente. Podés continuar.');
+          return send(text);
         }
 
         if(reqId===currentReqId) setTyping(false);
         if(!res.ok){ showError(json?.message || json?.error || raw); return; }
 
+        if(json.sessionId) sidSet(json.sessionId);
         const reply = json.message || json.assistant || json.reply || json.output || raw;
-        if(json.sessionId) setSessionId(json.sessionId);
         addMessage('assistant', reply);
       }catch(e){
         if(reqId===currentReqId) setTyping(false);
         showError(e?.name==='AbortError' ? 'timeout' : (e?.message||'error'));
-      }finally{
-        clearTimeout(to);
-      }
+      }finally{ clearTimeout(to); }
     }
 
-    // --------- cierre automático ----------
-    async function requestClose(){
+    // --------- cierre ----------
+    async function requestClose(source){
       if(closing) return;
       setClosing(true);
       try{
-        addMessage('assistant','⏳ La sesión terminó. Preparando un cierre automático...');
+        if(source === 'manual'){ addMessage('user','Hagamos un cierre.'); }
+        else { addMessage('assistant','⏳ La sesión terminó. Preparando un cierre automático...'); }
         const cierre = 'Generá un cierre breve con la conclusión principal y una reflexión de lo charlado.';
         await send(cierre);
         await endSessionOnServer();
-        clearSessionId();
+        sidClear();
       }catch(e){ showError(e?.message||'error cierre'); }
     }
 
-    // --------- control de tiempo ----------
+    // --------- timer (sin auto-extensión) ----------
     function startTimer(){
       clearInterval(interval); updateTimer(); askedAtNine = false; retriedAfter410 = false;
       interval = setInterval(async ()=>{
         sessionSeconds = Math.max(sessionSeconds - 1, 0);
         updateTimer();
 
-        // a 60s del final: auto-extender si hubo actividad en los últimos 20s
         if(sessionSeconds===60 && !askedAtNine){
           askedAtNine = true;
-          const ACTIVE_WINDOW_MS = 20000;
-          if(Date.now() - lastActivity <= ACTIVE_WINDOW_MS){
-            const resp = await extendSession(5);
-            if(resp && resp.expiresAt){
-              sessionSeconds += 5*60; // reflejar en UI
-              addMessage('system','Auto-extendimos 5 minutos porque estabas activo.');
-            }
-          } else {
-            addMessage('system','Falta 1 minuto. Si seguís escribiendo se extenderá automáticamente.');
-          }
+          nudge.style.display = 'flex';
+          addMessage('assistant','Queda 1 minuto. ¿Sumamos 5 minutos o preferís cerrar con una conclusión/reflexión?');
         }
 
         if(sessionSeconds===0){
           clearInterval(interval);
-          await requestClose();
+          nudge.style.display = 'none';
+          await requestClose('timeout');
         }
       },1000);
     }
@@ -203,31 +209,62 @@
       chatlog.innerHTML = '<div class="system">Bienvenido a la demo. Tenés 10 minutos para conversar. Empezá escribiendo abajo 👇</div>';
       sessionSeconds = 600; updateTimer(); setTyping(false); clearError();
       input.disabled = false; btn.disabled = false; closingBanner.style.display = 'none';
-      closing = false;
+      closing = false; nudge.style.display = 'none';
     }
 
     async function hardResetSession(){
-      await endSessionOnServer();
-      clearSessionId();
-      resetUI();
-      startTimer();
+      await endSessionOnServer(); sidClear(); resetUI(); startTimer();
+    }
+
+    // --------- inicio con contexto (nombre + objetivo + ánimo) ----------
+    async function startWithContext(){
+      const name = (fName.value||'').trim();
+      const goal = (fGoal.value||'').trim();
+      const mood = (fMood.value||'').trim();
+
+      if(!name && !goal && !mood){ input.focus(); return; }
+
+      const context = [
+        'Contexto del usuario:',
+        name ? `- Nombre: ${name}` : null,
+        goal ? `- Objetivo de la sesión: ${goal}` : null,
+        mood ? `- Estado de ánimo: ${mood}` : null,
+        '',
+        'Instrucciones para la apertura:',
+        name ? `- Saludá por el nombre (“${name}”).` : '- Saludá brevemente.',
+        '- Proponé 2 preguntas guía para avanzar.',
+        '- Armá una mini-agenda de 3 pasos para estos 10 minutos.',
+        '- Cerrá con 1 pregunta concreta para empezar.'
+      ].filter(Boolean).join('\n');
+
+      await send(context);
+      if(goal){ input.placeholder = `Ej.: ${goal} → contame en 1 frase qué sería un buen resultado`; }
+      input.focus();
     }
 
     // --------- eventos ----------
-    btn.addEventListener('click', ()=>{
-      const v=input.value.trim(); if(!v) return;
-      addMessage('user', v); input.value=''; send(v);
-    });
-    input.addEventListener('keydown', (e)=>{
-      if(e.key==='Enter'){ btn.click(); }
-      else { lastActivity = Date.now(); }
-    });
-    input.addEventListener('input', ()=>{ lastActivity = Date.now(); });
+    btn.addEventListener('click', ()=>{ const v=input.value.trim(); if(!v) return; addMessage('user', v); input.value=''; send(v); });
+    input.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ btn.click(); } });
 
-    // --------- arranque: limpiar sesión vieja automáticamente ----------
-    (async function boot(){
-      await hardResetSession(); // siempre empezamos “limpio”
-    })();
+    btnStart.addEventListener('click', startWithContext);
+    [fName, fGoal, fMood].forEach(el => el.addEventListener('keydown', e => { if(e.key==='Enter') startWithContext(); }));
+
+    btnAddTime.addEventListener('click', async ()=>{
+      const resp = await extendSession(5);
+      if(resp && resp.expiresAt){
+        sessionSeconds += 5*60;
+        nudge.style.display = 'none';
+        addMessage('system','Se agregaron 5 minutos a la sesión.');
+      }
+    });
+
+    btnWrap.addEventListener('click', async ()=>{
+      nudge.style.display = 'none';
+      await requestClose('manual');
+    });
+
+    // --------- arranque limpio ----------
+    (async function boot(){ await hardResetSession(); fName.focus(); })();
   </script>
 </body>
 </html>
