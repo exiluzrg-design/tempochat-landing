@@ -1,5 +1,10 @@
-// Etapa 1 — api/chat.js
+// Etapa 2 — api/chat.js
 export default async function handler(req, res) {
+  const response = (obj) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    return res.status(200).json(obj);
+  };
+
   try {
     res.setHeader('Access-Control-Allow-Origin', '*');
     if (req.method === 'OPTIONS') {
@@ -11,21 +16,25 @@ export default async function handler(req, res) {
       return res.status(405).json({ ok: false, error: 'method not allowed' });
     }
 
+    // Parseo defensivo
     let body = {};
     try {
       body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
-    } catch {
-      body = {};
+    } catch { body = {}; }
+
+    const text = (body.text || '').toString();
+    let sessionId = (body.sessionId || '').toString().trim();
+    if (!sessionId) {
+      sessionId = (globalThis.crypto?.randomUUID?.() || 'sid-' + Math.random().toString(36).slice(2));
     }
 
-    return res.status(200).json({
-      ok: true,
-      stage: 1,
-      echo: body,
-      note: 'API viva y respondiendo 200',
-    });
+    // Respuesta local simple (sin OpenAI todavía)
+    const reply = text
+      ? 'Te leo. Si lo decís en una oración, ¿qué te gustaría cambiar primero?'
+      : 'Estoy acá. Contame en una oración qué te preocupa y vemos un paso chiquito para hoy.';
+
+    return response({ ok: true, stage: 2, sessionId, message: reply });
   } catch (e) {
-    // NUNCA 500: siempre 200 con error
-    return res.status(200).json({ ok: false, stage: 1, error: e?.message || 'server error' });
+    return res.status(200).json({ ok: false, stage: 2, error: e?.message || 'server error' });
   }
 }
