@@ -1,4 +1,4 @@
-// api/chat.js — Etapa 1 (mock)
+// api/chat.js — Etapa 1 (mock, responde directo al front)
 export const config = { runtime: 'nodejs' };
 
 async function readBody(req) {
@@ -16,24 +16,22 @@ function respond(res, status, data) {
   res.end(JSON.stringify(data));
 }
 
-// Respuesta “psicólogo directo” en mock, sin OpenAI
 function mockReply(userText = '') {
   const t = (userText || '').toLowerCase();
 
-  if (t.includes('infiel') || t.includes('enga')) {
-    return "Uhh, te la mandaste. No está bien y lo sabés. O lo contás y te bancás la tormenta, o lo callás y cargás la mochila vos solo. Elegí qué peso podés llevar.";
+  if (t.includes('infiel')) {
+    return "Uhh, te la mandaste. No estuvo bien y lo sabés. O lo contás y bancás las consecuencias, o lo callás y cargás la mochila solo. Elegí.";
   }
-  if (t.includes('ansiedad') || t.includes('ansioso')) {
-    return "Sí, la ansiedad te come la cabeza. Dos pasos: hoy respirá 4–6 por 3 minutos; mañana 20’ de caminata sin pantalla. Corto y al pie.";
+  if (t.includes('ansiedad')) {
+    return "La ansiedad te come la cabeza. Dos pasos: hoy respirá 4-6 por 3 minutos; mañana 20’ de caminata sin pantalla. Corto y al pie.";
   }
-  if (t.includes('pareja') || t.includes('separ') || t.includes('dejar')) {
-    return "Si la relación está floja, hay dos caminos: hablar en serio y ver si hay arreglo, o cortar por lo sano. Aferrarte por miedo no es plan.";
+  if (t.includes('pareja') || t.includes('separar')) {
+    return "Si la relación está floja, hay dos caminos: hablar en serio y ver si hay arreglo, o cortar por lo sano. Aferrarte por miedo no sirve.";
   }
-  return "Te escucho. Decime en una línea qué te preocupa y vamos directo a opciones. Sin vueltas.";
+  return "Te escucho. Decime en una línea qué te preocupa y vamos directo a opciones.";
 }
 
 export default async function handler(req, res) {
-  // Solo POST
   if (req.method !== 'POST') {
     return respond(res, 405, { error: 'method_not_allowed', message: 'Use POST' });
   }
@@ -41,12 +39,15 @@ export default async function handler(req, res) {
   try {
     const body = await readBody(req);
     const text = (body.text ?? '').toString().trim();
-    if (!text) return respond(res, 400, { error: 'no_text', message: 'Falta "text"' });
+    if (!text) return respond(res, 400, { error: 'no_text', message: 'Falta \"text\"' });
 
     const reply = mockReply(text);
 
-    // En Etapa 1 no hay session ni storage: devolvemos solo el mensaje
-    return respond(res, 200, { message: reply });
+    // Devolvemos lo que tu front espera (sessionId + message)
+    return respond(res, 200, {
+      sessionId: "mock-session",
+      message: reply
+    });
   } catch (e) {
     console.log('[chat_mock_error]', e);
     return respond(res, 500, { error: 'server_error', message: String(e) });
