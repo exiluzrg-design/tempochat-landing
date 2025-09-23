@@ -1,201 +1,300 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" class="no-js">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>TempoChat · Neon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0b0c" />
+  <title>TempoChat — charlas privadas en 10 minutos</title>
+  <meta name="description" content="Sesiones privadas de 10 minutos, sin registro, 24/7 y con memoria de conversación. Privacidad real y foco en lo que necesitás ahora." />
   <style>
-    :root{
-      color-scheme: dark;
-      --bg0:#05060a; --bg1:#0b0f1a; --bg2:#0a1022;
-      --glass: rgba(255,255,255,.06);
-      --glass-2: rgba(255,255,255,.12);
-      --border: rgba(255,255,255,.12);
-      --text:#eef1ff; --muted:#9aa3c7;
-      --neon1:#00ffe1; --neon2:#7c5cff; --neon3:#13f3a2; --accent:#7df9ff;
+    /* ===== Reset & base ===== */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; background: #0b0b0c; color: #e8e8ec; }
+    :root {
+      --bg: #0b0b0c;
+      --panel: #141417;
+      --panel-2: #101013;
+      --text: #e8e8ec;
+      --muted: #a3a3ad;
+      --brand: #7cc6ff;
+      --brand-2: #5b8cff;
+      --ok: #79ffa1;
+      --warn: #ffd166;
+      --danger: #ff6b6b;
+      --radius: 18px;
+      /* Fallback for browsers without dvh */
+      --app-h: 100vh;
     }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; background: radial-gradient(1200px 700px at 10% -10%, #111635 0%, transparent 55%), radial-gradient(900px 600px at 110% 110%, #0b122d 0%, transparent 60%), linear-gradient(180deg, var(--bg1), var(--bg2)); color:var(--text);}
 
-    /* Background animated grid */
-    .grid{position:fixed; inset:0; pointer-events:none; opacity:.2; background-image: linear-gradient(transparent 0 31px, var(--border) 31px), linear-gradient(90deg, transparent 0 31px, var(--border) 31px); background-size: 32px 32px; mask-image: radial-gradient(65% 65% at 50% 50%, #000 60%, transparent 100%);} 
+    @supports (height: 100dvh) { :root { --app-h: 100dvh; } }
 
-    /* Neon blur blobs */
-    .blob{position:fixed; filter: blur(70px); opacity:.55; pointer-events:none;}
-    .b1{width:520px; height:520px; background:radial-gradient(circle at 30% 30%, var(--neon1), transparent 60%); top:-120px; left:-100px;}
-    .b2{width:460px; height:460px; background:radial-gradient(circle at 60% 40%, var(--neon2), transparent 60%); bottom:-140px; right:-120px;}
+    ::selection { background: rgba(124,198,255,.25); }
 
-    /* Layout */
-    .app{position:relative; display:grid; grid-template-columns: 300px 1fr; height:100vh;}
-    .side{backdrop-filter: blur(10px); background: linear-gradient(180deg, rgba(20,24,40,.55), rgba(10,14,26,.35)); border-right:1px solid var(--border); padding:22px; display:flex; flex-direction:column; gap:18px;}
-    .brand{display:flex; align-items:center; gap:12px}
-    .logo{width:34px; height:34px; border-radius:10px; background: conic-gradient(from 90deg, var(--neon1), var(--neon2), var(--neon3)); box-shadow:0 0 40px rgba(124,92,255,.35), 0 0 16px rgba(0,255,225,.4) inset}
-    .brand h1{font-size:16px; margin:0}
-    .tag{font-size:12px; color:var(--muted)}
+    /* Prevent iOS rubber band and layout jumps */
+    html { overscroll-behavior-y: none; }
 
-    /* Benefits */
-    .benefits{display:grid; gap:10px; margin-top:8px}
-    .benefit{display:flex; align-items:flex-start; gap:10px; padding:10px; border:1px solid var(--border); border-radius:12px; background:var(--glass)}
-    .benefit .dot{width:10px; height:10px; border-radius:50%; background:var(--neon3); box-shadow:0 0 10px var(--neon3)}
-    .benefit h3{margin:0; font-size:13px}
-    .benefit p{margin:2px 0 0; font-size:12px; color:var(--muted)}
+    /* ===== App shell ===== */
+    .app {
+      min-height: var(--app-h);
+      display: flex;
+      flex-direction: column;
+      background:
+        radial-gradient(1200px 1200px at 120% -20%, rgba(91,140,255,.15), transparent 50%),
+        radial-gradient(900px 900px at -20% 10%, rgba(124,198,255,.1), transparent 60%),
+        linear-gradient(180deg, var(--bg), #09090a 30%, #08080a);
+      position: relative;
+      isolation: isolate;
+    }
 
-    .main{position:relative; display:grid; grid-template-rows: 1fr auto;}
+    header.site {
+      position: sticky; top: 0; z-index: 5;
+      backdrop-filter: saturate(140%) blur(8px);
+      -webkit-backdrop-filter: saturate(140%) blur(8px);
+      background: color-mix(in oklab, var(--panel) 82%, transparent);
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
 
-    /* Messages panel */
-    .panel{height:100%; padding:20px 22px 0; display:flex; flex-direction:column;}
-    .messages{flex:1; overflow:auto; display:flex; flex-direction:column; gap:14px; padding-right:6px;}
-    .row{display:flex; align-items:flex-end; gap:10px;}
-    .row.user{justify-content:flex-end}
+    .wrap { max-width: 980px; margin: 0 auto; padding: 14px 16px; }
 
-    .avatar{width:34px; height:34px; border-radius:50%; flex:0 0 34px; display:grid; place-items:center; font-weight:700; font-size:13px; color:#e5f8ff; background:linear-gradient(135deg,#0b2131,#0a0f2a); border:1px solid var(--border); box-shadow:0 0 16px rgba(125,249,255,.18) inset}
-    .avatar.ai{color:#eae3ff; background:linear-gradient(135deg,#140a2e,#090d26); box-shadow:0 0 16px rgba(124,92,255,.18) inset}
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .logo {
+      width: 28px; height: 28px; border-radius: 8px;
+      background: conic-gradient(from 220deg, var(--brand), var(--brand-2), var(--ok));
+      filter: drop-shadow(0 0 20px rgba(124,198,255,.35));
+    }
+    .title { font-weight: 700; letter-spacing: .2px; }
+    .subtitle { color: var(--muted); font-size: 13.5px; }
 
-    .bubble{max-width:70%; padding:12px 14px; border-radius:14px; border:1px solid var(--border); background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)); backdrop-filter: blur(6px); position:relative; line-height:1.4; box-shadow: 0 6px 28px rgba(0,0,0,.35);} 
-    .row.user .bubble{border-color: rgba(0,255,225,.35); box-shadow: 0 0 30px rgba(0,255,225,.14); background:linear-gradient(180deg, rgba(0,255,225,.08), rgba(255,255,255,.03));}
-    .row.assistant .bubble{border-color: rgba(124,92,255,.35); box-shadow: 0 0 30px rgba(124,92,255,.14); background:linear-gradient(180deg, rgba(124,92,255,.07), rgba(255,255,255,.03));}
+    /* ===== Benefits row ===== */
+    .benefits { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 10px; margin-top: 10px; }
+    .chip { 
+      border: 1px solid rgba(255,255,255,.08);
+      background: linear-gradient(180deg, #141418, #0f0f14);
+      padding: 10px 12px; border-radius: 999px; font-size: 12.5px; color: #d6d6df;
+      display: flex; align-items: center; gap: 8px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #7cc6ff; box-shadow: 0 0 10px rgba(124,198,255,.7); }
 
-    .meta{margin-top:6px; font-size:11px; color:var(--muted)}
+    @media (max-width: 860px) {
+      .benefits { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    }
 
-    /* Typing */
-    .typing{display:inline-grid; grid-auto-flow:column; gap:6px; align-items:center}
-    .dot{width:6px; height:6px; border-radius:50%; background:var(--accent); box-shadow:0 0 10px var(--accent), 0 0 30px var(--accent); opacity:.4; animation: b 1.2s infinite ease-in-out}
-    .dot:nth-child(2){animation-delay:.18s} .dot:nth-child(3){animation-delay:.36s}
-    @keyframes b{0%,80%,100%{opacity:.3; transform:translateY(0)}40%{opacity:1; transform:translateY(-2px)}}
+    /* ===== Messages area ===== */
+    .messages {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start; /* todos a la izquierda por defecto */
+      gap: 12px;
+      padding: 18px 16px 12px;
+      max-width: 980px; margin: 0 auto; width: 100%;
+      overflow-y: auto; overscroll-behavior: contain;
+      scroll-behavior: smooth;
+    }
 
-    /* Composer */
-    .composerWrap{position:sticky; bottom:0; background: linear-gradient(180deg, rgba(6,8,18,.2), rgba(6,8,18,.55)); padding:14px 22px 20px;}
-    .composer{display:flex; align-items:center; gap:10px; border:1px solid var(--border); border-radius:14px; padding:10px; background:var(--glass)}
-    .inp{flex:1; background:transparent; border:0; outline:none; padding:10px; color:var(--text); font-size:15px}
-    .send{display:inline-flex; align-items:center; gap:9px; padding:10px 14px; border-radius:12px; border:1px solid rgba(0,255,225,.35); background: radial-gradient(60% 120% at 30% 20%, rgba(0,255,225,.25), rgba(124,92,255,.18)); color:#ddfff7; font-weight:700; cursor:pointer; transition: transform .06s ease, box-shadow .2s ease; box-shadow: 0 0 22px rgba(0,255,225,.12);} 
-    .send:hover{ box-shadow: 0 0 30px rgba(0,255,225,.25), 0 0 42px rgba(124,92,255,.2)}
-    .send:active{ transform: translateY(1px) }
+    .bubble {
+      max-width: min(84%, 720px);
+      padding: 12px 14px;
+      border-radius: var(--radius);
+      background: #15151a;
+      border: 1px solid rgba(255,255,255,.06);
+      line-height: 1.4; font-size: 15px; color: #eaeaf1;
+      box-shadow: 0 6px 22px rgba(0,0,0,.28);
+      position: relative;
+      word-wrap: break-word; word-break: break-word;
+    }
 
-    /* Animations */
-    .in{ animation: in .24s cubic-bezier(.2,.7,.2,1); }
-    @keyframes in{ from{ transform: translateY(6px); opacity:0 } to{ transform:none; opacity:1 } }
-    .type{ overflow: hidden; white-space: pre-wrap; }
+    .bubble .meta { margin-top: 6px; font-size: 12px; color: var(--muted); }
 
-    @media (max-width: 860px){ .app{ grid-template-columns: 1fr; } .side{ display:none; } }
+    /* Mensajes de TempoChat (asistente) a la izquierda por defecto */
+    .bubble.bot {
+      background: linear-gradient(180deg, #16161c, #121217);
+      border: 1px solid rgba(124,198,255,.18);
+    }
+
+    /* Mensajes del usuario: se apilan igual, pero se empujan a la derecha sin romper el flujo */
+    .bubble.me {
+      margin-left: auto; /* << clave para no romper la pila */
+      background: linear-gradient(180deg, #1b2030, #0f1422);
+      border: 1px solid rgba(91,140,255,.28);
+    }
+
+    /* ===== Composer ===== */
+    .composer-wrap {
+      position: sticky; bottom: 0; z-index: 10;
+      background: linear-gradient(180deg, rgba(16,16,20,.2), rgba(16,16,20,.75));
+      backdrop-filter: blur(8px) saturate(140%);
+      -webkit-backdrop-filter: blur(8px) saturate(140%);
+      border-top: 1px solid rgba(255,255,255,.06);
+      padding-bottom: max(10px, env(safe-area-inset-bottom));
+    }
+
+    form.composer {
+      max-width: 980px; margin: 0 auto; width: 100%;
+      display: grid; grid-template-columns: 1fr auto; gap: 10px;
+      padding: 10px 12px;
+    }
+
+    textarea#input {
+      resize: none; min-height: 44px; max-height: 160px;
+      padding: 12px 14px; border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.08);
+      outline: none; background: #0f0f14; color: var(--text);
+      line-height: 1.35; font-size: 15px;
+      caret-color: var(--brand);
+      box-shadow: inset 0 0 0 1px rgba(124,198,255,.08);
+    }
+
+    button#send {
+      padding: 0 16px; border-radius: 14px; border: 1px solid rgba(255,255,255,.1);
+      background: linear-gradient(180deg, #1a1a22, #12121a);
+      color: #eaeaf1; font-weight: 600; letter-spacing: .2px; cursor: pointer;
+      box-shadow: 0 6px 22px rgba(0,0,0,.25);
+      transition: transform .06s ease, box-shadow .2s ease, background .2s ease;
+    }
+    button#send:active { transform: translateY(1px); box-shadow: 0 3px 14px rgba(0,0,0,.28); }
+    button[disabled] { opacity: .6; cursor: not-allowed; }
+
+    /* ===== Small helpers ===== */
+    .hidden { display: none !important; }
+    .fade-in { animation: fade .18s ease-out; }
+    @keyframes fade { from { opacity: 0; transform: translateY(4px);} to { opacity:1; transform:none;} }
   </style>
 </head>
 <body>
-  <div class="grid"></div>
-  <div class="blob b1"></div>
-  <div class="blob b2"></div>
-
-  <div class="app">
-    <aside class="side">
-      <div class="brand">
-        <div class="logo" aria-hidden></div>
-        <div>
-          <h1>TempoChat</h1>
-          <div class="tag">Neon • directo y sin vueltas</div>
+  <div class="app" id="app">
+    <header class="site">
+      <div class="wrap">
+        <div class="brand">
+          <div class="logo" aria-hidden="true"></div>
+          <div>
+            <div class="title">TempoChat</div>
+            <div class="subtitle">Charlas privadas en 10 minutos — sin registro</div>
+          </div>
+        </div>
+        <!-- 5 beneficios visibles -->
+        <div class="benefits" aria-label="beneficios tempochat">
+          <div class="chip"><span class="dot"></span>Privado y anónimo</div>
+          <div class="chip"><span class="dot"></span>Disponible 24/7</div>
+          <div class="chip"><span class="dot"></span>Sin registro ni apps</div>
+          <div class="chip"><span class="dot"></span>Memoria dentro de la sesión</div>
+          <div class="chip"><span class="dot"></span>Cierre guiado en 10′</div>
         </div>
       </div>
+    </header>
 
-      <!-- Beneficios visibles (5) -->
-      <div class="benefits">
-        <div class="benefit"><span class="dot"></span><div><h3>Habla sin vueltas</h3><p>Consejos directos, crudos y con calle. Cero manual académico.</p></div></div>
-        <div class="benefit"><span class="dot"></span><div><h3>Te sigue el hilo</h3><p>Recuerda el contexto para que la charla sea coherente y profunda.</p></div></div>
-        <div class="benefit"><span class="dot"></span><div><h3>Enfocado en acción</h3><p>Te deja con pasos concretos, no con discursos eternos.</p></div></div>
-        <div class="benefit"><span class="dot"></span><div><h3>Privacidad cuidada</h3><p>No guardamos el texto en base: solo señales anónimas para mejorar.</p></div></div>
-        <div class="benefit"><span class="dot"></span><div><h3>Disponible al toque</h3><p>Responde rápido, a cualquier hora, desde cualquier dispositivo.</p></div></div>
+    <main class="messages" id="messages" aria-live="polite" aria-label="Historial de conversación">
+      <div class="bubble bot fade-in">
+        Hola, ¿cómo andás? A veces la vida nos pone un poco desorientados. Contame, ¿qué te está pasando? Estoy acá para escucharte.
+        <div class="meta">TempoChat</div>
       </div>
-    </aside>
+    </main>
 
-    <section class="main">
-      <div class="panel">
-        <div id="messages" class="messages" aria-live="polite" aria-label="Mensajes"></div>
-        <div id="typingRow" class="row assistant" style="display:none; padding:0 4px 12px 4px;">
-          <div class="avatar ai">TC</div>
-          <div class="bubble"><span class="typing"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span></div>
-        </div>
-      </div>
-
-      <div class="composerWrap">
-        <div class="composer">
-          <input id="text" class="inp" type="text" placeholder="Decime en una línea qué te pasa…" autocomplete="off" />
-          <button id="send" class="send" type="button">Enviar →</button>
-        </div>
-      </div>
-    </section>
+    <div class="composer-wrap">
+      <form id="composer" class="composer" autocomplete="off">
+        <textarea id="input" placeholder="Escribí tu mensaje… (Shift + Enter para salto de línea)" aria-label="Escribí tu mensaje"></textarea>
+        <button id="send" type="submit">Enviar</button>
+      </form>
+    </div>
   </div>
 
   <script>
-    const $msgs = document.getElementById('messages');
-    const $typing = document.getElementById('typingRow');
-    const $input = document.getElementById('text');
-    const $send = document.getElementById('send');
+    // ===== Mobile viewport fixes (iOS/Android) =====
+    (function viewportFix() {
+      const setVH = () => {
+        const dvh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+        document.documentElement.style.setProperty('--app-h', dvh + 'px');
+      };
+      setVH();
+      window.addEventListener('resize', setVH);
+      if (window.visualViewport) visualViewport.addEventListener('resize', setVH);
+    })();
 
-    let sessionId = localStorage.getItem('tempochat_session') || null;
-    const context = []; // últimos 12 mensajes
+    // ===== Simple chat client =====
+    const $ = (sel, el=document) => el.querySelector(sel);
+    const messagesEl = $('#messages');
+    const inputEl = $('#input');
+    const sendBtn = $('#send');
 
-    const fmtTime = (d=new Date()) => d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    // Persistimos un sessionId si el backend lo usa para la memoria de sesión
+    let sessionId = localStorage.getItem('tempochat_session') || '';
 
-    function addMsg(role, text){
-      const row = document.createElement('div');
-      row.className = 'row ' + (role === 'user' ? 'user' : 'assistant') + ' in';
-
-      const avatar = document.createElement('div');
-      avatar.className = 'avatar ' + (role === 'assistant' ? 'ai' : '');
-      avatar.textContent = role === 'assistant' ? 'TC' : 'Yo';
-
-      const wrap = document.createElement('div');
-      const bubble = document.createElement('div');
-      bubble.className = 'bubble type';
-      bubble.textContent = '';
-      typewriter(bubble, text, 8 + Math.random()*6);
-
+    function appendMessage(role, text) {
+      const div = document.createElement('div');
+      div.className = `bubble ${role === 'user' ? 'me' : 'bot'} fade-in`;
+      div.innerText = text;
       const meta = document.createElement('div');
       meta.className = 'meta';
-      meta.textContent = fmtTime();
-
-      wrap.appendChild(bubble); wrap.appendChild(meta);
-      if(role==='user'){ row.appendChild(wrap); row.appendChild(avatar); }
-      else { row.appendChild(avatar); row.appendChild(wrap); }
-
-      $msgs.appendChild(row);
-      $msgs.scrollTop = $msgs.scrollHeight;
-
-      context.push({ role, content: text });
-      if(context.length > 12) context.splice(0, context.length-12);
+      meta.textContent = role === 'user' ? 'Vos' : 'TempoChat';
+      div.appendChild(meta);
+      messagesEl.appendChild(div);
+      // Scroll al final sin saltos
+      messagesEl.scrollTop = messagesEl.scrollHeight + 64;
     }
 
-    function setTyping(on){ $typing.style.display = on ? 'flex' : 'none'; if(on){ $msgs.scrollTop = $msgs.scrollHeight + 80; } }
-
-    async function call(path, payload){
-      const res = await fetch(`${location.origin}${path}`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload||{}) });
-      if(!res.ok){ throw new Error(`${res.status}: ${await res.text()}`); }
-      return res.json();
+    function setSending(sending) {
+      sendBtn.disabled = sending;
+      inputEl.disabled = sending;
     }
 
-    async function send(){
-      const raw = $input.value || ''; const text = String(raw).trim();
-      if(!text) return;
-      addMsg('user', text); $input.value='';
-      setTyping(true); $input.disabled = true; $send.disabled = true;
-      try{
-        const data = await call('/api/chat', { text, sessionId, context });
-        if(data.sessionId && data.sessionId !== sessionId){ sessionId = data.sessionId; localStorage.setItem('tempochat_session', sessionId); }
-        addMsg('assistant', data.message || 'Sin mensaje');
-      }catch(e){ addMsg('assistant', '⚠️ Red: '+ e.message); }
-      finally{ setTyping(false); $input.disabled = false; $send.disabled = false; $input.focus(); }
+    async function sendMessage(text) {
+      setSending(true);
+      appendMessage('user', text);
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, sessionId })
+        });
+
+        if (!res.ok) {
+          let msg = 'Perdón, hubo un problema de conexión. Probá de nuevo.';
+          try { const j = await res.json(); if (j && j.message) msg = j.message; } catch {}
+          appendMessage('assistant', msg);
+          return;
+        }
+
+        const data = await res.json();
+        // Backends posibles: {assistant:"..."} ó {message:"..."} ó {reply:"..."}
+        const reply = data.assistant || data.message || data.reply || '…';
+        if (data.sessionId) {
+          sessionId = data.sessionId;
+          localStorage.setItem('tempochat_session', sessionId);
+        }
+        appendMessage('assistant', reply);
+      } catch (e) {
+        appendMessage('assistant', 'Perdón, hubo un problema de red.');
+      } finally {
+        setSending(false);
+        inputEl.focus();
+      }
     }
 
-    // typewriter effect (simple)
-    function typewriter(el, text, speed=10){
-      let i=0; function step(){ el.textContent = text.slice(0, i++); if(i<=text.length){ requestAnimationFrame(step); } }
-      let acc=0; function tick(){ acc+=speed; if(acc>10){ acc=0; step(); } if(i<=text.length) requestAnimationFrame(tick); }
-      requestAnimationFrame(tick);
-    }
+    $('#composer').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const text = inputEl.value.trim();
+      if (!text) return;
+      inputEl.value = '';
+      sendMessage(text);
+    });
 
-    $send.addEventListener('click', send);
-    $input.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); send(); } });
+    // Enter para enviar, Shift+Enter para salto de línea
+    inputEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        $('#composer').dispatchEvent(new Event('submit'));
+      }
+    });
 
-    // mensaje inicial
-    addMsg('assistant', 'Ok, contame en una frase qué te está trabando. Sin chamuyo.');
+    // Evitar movimientos raros: al enfocar el input, llevar el scroll al final
+    inputEl.addEventListener('focus', () => {
+      setTimeout(() => { messagesEl.scrollTop = messagesEl.scrollHeight + 64; }, 50);
+    });
+
+    // API: opción para limpiar memoria local al cerrar manualmente
+    window.clearTempoChatSession = () => { localStorage.removeItem('tempochat_session'); };
   </script>
 </body>
 </html>
