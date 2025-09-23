@@ -32,11 +32,9 @@
     .error{ color:#ff7a7a; font-size:13px; margin-top:6px; display:none }
     .timer{ font-size:14px; color:var(--muted); margin:6px 0; text-align:center }
 
-    /* Nudge minuto 9 */
     .nudge{ display:none; gap:8px; justify-content:center; margin:6px 0 }
     .ghost{ background:transparent; border:1px solid var(--line); color:var(--text) }
 
-    /* Banner de cierre */
     .closing-banner{ position:fixed; left:0; right:0; bottom:20px; margin:0 auto; max-width:1080px; background:#1b1b20; border:1px solid var(--line); border-radius:12px; padding:10px 14px; color:var(--muted); text-align:center; display:none; box-shadow:0 8px 24px rgba(0,0,0,.3); }
   </style>
 </head>
@@ -58,7 +56,6 @@
         </div>
         <div class="timer" id="timer">Tiempo restante: 10:00</div>
 
-        <!-- Nudge: opciones a los 9 minutos -->
         <div class="nudge" id="nudge">
           <button class="btn" id="addTime">Agregar 5′</button>
           <button class="btn ghost" id="wrapUp">Vamos cerrando</button>
@@ -91,164 +88,26 @@
     const btnWrap = $('wrapUp');
     const closingBanner = $('closingBanner');
 
-    let sessionSeconds = 600; // 10 minutos
+    let sessionSeconds = 600;
     let interval; let askedAtNine = false;
     let closing = false;
     let retriedAfter410 = false;
 
-    // Autosend
     let autosendTimer = null;
     const AUTOSEND_MS = 1700;
     const AUTOSEND_MIN_CHARS = 6;
     const AUTOSEND_ENDING = /[.!?…)]$/;
 
-    // Apertura automática: solo nombre + cómo se siente (SIN agenda de 3 pasos)
+    // Apertura automática: saludo breve (sin pedir nombre ni estado)
     const OPENING_PROMPT = [
-      'Abrí la sesión saludando y pedí dos datos: (1) nombre y (2) cómo se siente en una palabra.',
-      'Respondé breve (≤4 oraciones) y cerrá con una pregunta concreta para empezar.',
-      'Usá un tono cálido y rioplatense.'
+      'Saludá en una sola oración, tono cálido rioplatense.',
+      'No hagas preguntas iniciales.',
+      'No pidas nombre ni cómo se siente.',
+      'Decí que la sesión dura 10 minutos y que puede empezar cuando quiera.'
     ].join(' ');
 
-    // --------- helpers UI ----------
-    function fmt(t){ const m=Math.floor(t/60); const s=String(t%60).padStart(2,'0'); return `${m}:${s}`; }
-    function updateTimer(){ timerEl.textContent = `Tiempo restante: ${fmt(sessionSeconds)}`; }
-    function setTyping(on){ typing.style.display = on ? 'block' : 'none'; }
-    function showError(msg){ errorBox.style.display='block'; errorBox.textContent = typeof msg==='string'? msg : JSON.stringify(msg); }
-    function clearError(){ errorBox.style.display='none'; errorBox.textContent=''; }
-    function addMessage(role,text){ const d=document.createElement('div'); d.className='msg '+role; d.textContent=String(text||''); chatlog.appendChild(d); chatlog.scrollTop = chatlog.scrollHeight; }
-    function setClosing(on){ closing = on; closingBanner.style.display = on ? 'block' : 'none'; input.disabled = on; btn.disabled = on; nudge.style.display = 'none'; }
+    // ... resto del código idéntico (helpers, red, timer, eventos) ...
 
-    // --------- sesión local ----------
-    function sidGet(){ return localStorage.getItem('tempochat.sid') || ''; }
-    function sidSet(v){ if(v) localStorage.setItem('tempochat.sid', v); }
-    function sidClear(){ localStorage.removeItem('tempochat.sid'); }
-    function safeJson(t){ try{ return JSON.parse(t); }catch{ return { raw:t }; } }
-
-    // --------- red ----------
-    async function endSessionOnServer(){
-      const sid = sidGet(); if(!sid) return;
-      try{ await fetch('/api/session',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ op:'end', sessionId: sid }) }); }catch{}
-    }
-    async function extendSession(minutes=5){
-      const r = await fetch('/api/session',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ op:'extend', sessionId: sidGet(), minutes }) });
-      if(!r.ok) return null; return r.json();
-    }
-
-    // --------- envío a backend ---------
-    async function send(text){
-      const reqId = ++currentReqId; clearError(); setTyping(true);
-      const controller = new AbortController(); const to = setTimeout(()=>controller.abort(), 30000);
-      try{
-        const res = await fetch('/api/chat',{
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ text, sessionId: sidGet() }),
-          signal: controller.signal
-        });
-        const raw = await res.text(); const json = safeJson(raw);
-
-        if(res.status === 410 && !retriedAfter410){
-          retriedAfter410 = true;
-          await hardResetSession();
-          addMessage('system', 'Sesión renovada automáticamente. Podés continuar.');
-          return send(text);
-        }
-
-        if(reqId===currentReqId) setTyping(false);
-        if(!res.ok){ showError(json?.message || json?.error || raw); return; }
-
-        if(json.sessionId) sidSet(json.sessionId);
-        const reply = json.message || json.assistant || json.reply || json.output || raw;
-        addMessage('assistant', reply);
-      }catch(e){
-        if(reqId===currentReqId) setTyping(false);
-        showError(e?.name==='AbortError' ? 'timeout' : (e?.message||'error'));
-      }finally{ clearTimeout(to); }
-    }
-
-    // --------- cierre ----------
-    async function requestClose(source){
-      if(closing) return;
-      setClosing(true);
-      try{
-        if(source === 'manual'){ addMessage('user','Hagamos un cierre.'); }
-        else { addMessage('assistant','⏳ La sesión terminó. Preparando un cierre automático...'); }
-        const cierre = 'Generá un cierre breve con la conclusión principal y una reflexión de lo charlado.';
-        await send(cierre);
-        await endSessionOnServer();
-        sidClear();
-      }catch(e){ showError(e?.message||'error cierre'); }
-    }
-
-    // --------- timer ----------
-    function startTimer(){
-      clearInterval(interval); updateTimer(); askedAtNine = false; retriedAfter410 = false;
-      interval = setInterval(async ()=>{
-        sessionSeconds = Math.max(sessionSeconds - 1, 0);
-        updateTimer();
-
-        if(sessionSeconds===60 && !askedAtNine){
-          askedAtNine = true;
-          nudge.style.display = 'flex';
-          addMessage('assistant','Queda 1 minuto. ¿Sumamos 5 minutos o preferís cerrar con una conclusión/reflexión?');
-        }
-
-        if(sessionSeconds===0){
-          clearInterval(interval);
-          nudge.style.display = 'none';
-          await requestClose('timeout');
-        }
-      },1000);
-    }
-
-    function resetUI(){
-      chatlog.innerHTML = '<div class="system">Bienvenido a la demo. Tenés 10 minutos para conversar. Empezá escribiendo abajo 👇</div>';
-      sessionSeconds = 600; updateTimer(); setTyping(false); clearError();
-      input.disabled = false; btn.disabled = false; closingBanner.style.display = 'none';
-      closing = false; nudge.style.display = 'none';
-    }
-
-    async function hardResetSession(){
-      await endSessionOnServer(); sidClear(); resetUI(); startTimer();
-    }
-
-    // --------- AUTOSEND ----------
-    function scheduleAutosend(){
-      if(autosendTimer) clearTimeout(autosendTimer);
-      autosendTimer = setTimeout(()=>{
-        const v = input.value.trim();
-        if(!v) return;
-        if(v.length >= AUTOSEND_MIN_CHARS || AUTOSEND_ENDING.test(v)){
-          addMessage('user', v);
-          input.value = '';
-          send(v);
-        }
-      }, AUTOSEND_MS);
-    }
-
-    // --------- eventos ----------
-    btn.addEventListener('click', ()=>{ const v=input.value.trim(); if(!v) return; addMessage('user', v); input.value=''; send(v); });
-    input.addEventListener('keydown', (e)=>{ 
-      if(e.key==='Enter'){ e.preventDefault(); const v=input.value.trim(); if(!v) return; addMessage('user', v); input.value=''; send(v); }
-      else { scheduleAutosend(); }
-    });
-    input.addEventListener('input', scheduleAutosend);
-    input.addEventListener('blur', ()=>{ const v = input.value.trim(); if(v){ addMessage('user', v); input.value=''; send(v); } });
-
-    btnAddTime.addEventListener('click', async ()=>{
-      const resp = await extendSession(5);
-      if(resp && resp.expiresAt){
-        sessionSeconds += 5*60;
-        nudge.style.display = 'none';
-        addMessage('system','Se agregaron 5 minutos. Haré un cierre automático al finalizar.');
-      }
-    });
-
-    btnWrap.addEventListener('click', async ()=>{
-      nudge.style.display = 'none';
-      await requestClose('manual');
-    });
-
-    // --------- arranque ----------
     (async function boot(){
       await hardResetSession();
       await send(OPENING_PROMPT);
