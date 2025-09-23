@@ -87,6 +87,7 @@
     let sessionSeconds = 600, interval, askedAtNine = false;
     let closing = false, retriedAfter410 = false;
 
+    // Autosend con pausa (mantengo), pero SIN blur auto-send
     let autosendTimer = null;
     const AUTOSEND_MS = 1700, AUTOSEND_MIN_CHARS = 6, AUTOSEND_ENDING = /[.!?…)]$/;
 
@@ -127,7 +128,7 @@
       try{ await fetch('/api/session',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ op:'end', sessionId: sid }) }); }catch{}
     }
     async function extendSession(minutes=5){
-      // Best-effort; el frontend ya suma optimista
+      // Dejado por compatibilidad, pero ya NO se usa en el click (evitamos errores de backend).
       try{
         const r = await fetch('/api/session',{
           method:'POST',
@@ -159,14 +160,19 @@
         }
 
         if(reqId===currentReqId) setTyping(false);
-        if(!res.ok){ showError(json?.message || json?.error || raw); return; }
+        if(!res.ok){
+          // Mostramos un mensaje suave en lugar del error crudo
+          addMessage('assistant','Tuve un problema técnico para responder desde el servidor. Probemos de nuevo con otra frase o contame un poco más.');
+          return;
+        }
 
         if(json.sessionId) sidSet(json.sessionId);
         const reply = json.message || json.assistant || json.reply || json.output || raw;
         addMessage('assistant', reply);
       }catch(e){
         if(reqId===currentReqId) setTyping(false);
-        showError(e?.name==='AbortError' ? 'timeout' : (e?.message||'error'));
+        // Mensaje suave ante falla
+        addMessage('assistant','Se me trabó el servidor un segundo. Sigamos: ¿qué parte te gustaría destrabar primero?');
       }finally{ clearTimeout(to); }
     }
 
@@ -191,7 +197,7 @@
         await endSessionOnServer();
         sidClear();
       }catch(e){
-        showError(e?.message || 'error cierre');
+        // no mostramos error crudo; ya mandamos un mensaje suave
       }finally{
         // Siempre ocultamos el banner, pase lo que pase
         closingBanner.style.display = 'none';
@@ -229,7 +235,7 @@
       sidClear(); resetUI(); startTimer();
     }
 
-    // --------- autosend ----------
+    // --------- autosend (sin blur) ----------
     function scheduleAutosend(){
       if(autosendTimer) clearTimeout(autosendTimer);
       autosendTimer = setTimeout(()=>{
@@ -250,18 +256,19 @@
       else { scheduleAutosend(); }
     });
     input.addEventListener('input', scheduleAutosend);
-    input.addEventListener('blur', ()=>{ const v = input.value.trim(); if(v){ addMessage('user', v); input.value=''; send(v); } });
+    // 🚫 Eliminado el auto-send en blur para evitar errores al tocar “Agregar 5′”
+    // input.addEventListener('blur', ...);
 
-    // Agregar 5′ (optimista en UI + best-effort al backend)
-    btnAddTime.addEventListener('click', async ()=>{
+    // Agregar 5′ (100% front, sin llamar backend)
+    btnAddTime.addEventListener('click', ()=>{
       if (closing) return;
-      nudge.style.display = 'none';                // ocultamos opciones
+      nudge.style.display = 'none';
       const ADD = 5 * 60;
-      sessionSeconds = Math.max(sessionSeconds, 1) + ADD; // evitar carrera si queda en 0
+      sessionSeconds = Math.max(sessionSeconds, 1) + ADD;
       updateTimer();
       addMessage('system','Se agregaron 5 minutos. Seguimos conversando y cierro automáticamente al finalizar.');
-      // Notificar al backend (no bloquea)
-      await extendSession(5);
+      // Si más adelante querés notificar al servidor:
+      // extendSession(5); // <- opcional, ya no bloquea la UI
     });
 
     btnWrap.addEventListener('click', async ()=>{ await requestClose('manual'); });
