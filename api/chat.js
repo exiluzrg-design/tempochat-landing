@@ -1,14 +1,5 @@
-// api/chat.js — Etapa 4 + Prompt con cierres contextuales
+// api/chat.js — Etapa 1 (mock)
 export const config = { runtime: 'nodejs' };
-
-import { randomUUID } from 'crypto';
-
-const SB_URL = process.env.SUPABASE_URL;
-const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const OPENAI_KEY = process.env.OPENAI_API_KEY || '';
-
-function ok(res, data) { return res.status(200).json(data); }
-function bad(res, code, msg, status = 400) { return res.status(status).json({ error: code, message: msg }); }
 
 async function readBody(req) {
   if (req.body && typeof req.body === 'object') return req.body;
@@ -20,101 +11,44 @@ async function readBody(req) {
   });
 }
 
-function resolveSessionId(body, headers) {
-  return body.sessionId || headers['x-session-id'] || headers['x-sessionid'] || randomUUID();
+function respond(res, status, data) {
+  res.status(status).setHeader('Content-Type', 'application/json');
+  res.end(JSON.stringify(data));
 }
 
-async function saveMessage(row) {
-  if (!SB_URL || !SB_KEY) throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
-  if (!row.session_id) throw new Error('Missing session_id');
-  if (!row.role) throw new Error('Missing role');
-  if (row.role !== 'user' && row.role !== 'assistant') throw new Error('Invalid role (must be user|assistant)');
+// Respuesta “psicólogo directo” en mock, sin OpenAI
+function mockReply(userText = '') {
+  const t = (userText || '').toLowerCase();
 
-  const resp = await fetch(`${SB_URL}/rest/v1/messages`, {
-    method: 'POST',
-    headers: {
-      apikey: SB_KEY,
-      Authorization: `Bearer ${SB_KEY}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=representation'
-    },
-    body: JSON.stringify({
-      session_id: row.session_id,
-      role: row.role,
-      content: row.content ?? null,
-      tags: Array.isArray(row.tags) ? row.tags : (row.tags ? [row.tags] : []),
-      meta: row.meta ?? {}
-    })
-  });
-
-  const text = await resp.text();
-  console.log('[saveMessage]', row.role, resp.status, resp.ok, text);
-  if (!resp.ok) throw new Error(`saveMessage failed ${resp.status}: ${text}`);
-  try { return JSON.parse(text)[0]; } catch { return text; }
+  if (t.includes('infiel') || t.includes('enga')) {
+    return "Uhh, te la mandaste. No está bien y lo sabés. O lo contás y te bancás la tormenta, o lo callás y cargás la mochila vos solo. Elegí qué peso podés llevar.";
+  }
+  if (t.includes('ansiedad') || t.includes('ansioso')) {
+    return "Sí, la ansiedad te come la cabeza. Dos pasos: hoy respirá 4–6 por 3 minutos; mañana 20’ de caminata sin pantalla. Corto y al pie.";
+  }
+  if (t.includes('pareja') || t.includes('separ') || t.includes('dejar')) {
+    return "Si la relación está floja, hay dos caminos: hablar en serio y ver si hay arreglo, o cortar por lo sano. Aferrarte por miedo no es plan.";
+  }
+  return "Te escucho. Decime en una línea qué te preocupa y vamos directo a opciones. Sin vueltas.";
 }
-
-// --- Nuevo Prompt (cierres contextuales, no repetitivos)
-const SYSTEM_PROMPT = `
-Sos un psicólogo argentino, directo, que canta las 40. Usá frases cortas y claras. 
-Validá la emoción en una línea, tirá la posta en las siguientes, y cerrá SIEMPRE con una frase breve que devuelva la responsabilidad al usuario. 
-El cierre debe sonar natural y atado a lo que se charló, no repetirse de forma mecánica. 
-
-Ejemplos de estilo de cierre (no repetir textualmente):
-- “Al final, sos vos quien define el próximo paso.”
-- “Pensalo bien, porque sos vos quien lo tiene que bancar.”
-- “Que lo que elijas sea algo que te deje dormir tranquilo.”
-- “Nadie más puede resolverlo por vos.”
-
-Reglas:
-1. No uses siempre la misma frase, generá variación natural.
-2. El cierre tiene que estar conectado al contenido de la charla.
-3. Máximo 5–6 frases por respuesta.
-`;
 
 export default async function handler(req, res) {
+  // Solo POST
+  if (req.method !== 'POST') {
+    return respond(res, 405, { error: 'method_not_allowed', message: 'Use POST' });
+  }
+
   try {
-    if (req.method !== 'POST') return bad(res, 'method_not_allowed', 'Use POST', 405);
-
     const body = await readBody(req);
-    const session_id = resolveSessionId(body, req.headers);
-
     const text = (body.text ?? '').toString().trim();
-    if (!text) return bad(res, 'no_text', 'Falta "text"');
+    if (!text) return respond(res, 400, { error: 'no_text', message: 'Falta "text"' });
 
-    // Guardar mensaje del usuario
-    await saveMessage({ session_id, role: 'user', content: text, tags: body.tags, meta: { src: 'api' } });
+    const reply = mockReply(text);
 
-    // Respuesta IA (o fallback si no hay API Key)
-    let assistantText = 'Hola, te escucho. (respuesta de prueba — falta OPENAI_API_KEY)';
-    if (OPENAI_KEY) {
-      const r = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${OPENAI_KEY}` },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [
-            { role: 'system', content: SYSTEM_PROMPT },
-            { role: 'user', content: text }
-          ],
-          temperature: 0.7,
-          max_tokens: 350
-        })
-      });
-      if (r.ok) {
-        const j = await r.json();
-        assistantText = j?.choices?.[0]?.message?.content?.trim() || assistantText;
-      } else {
-        const t = await r.text(); console.log('[openai_error:chat]', r.status, t);
-        assistantText = 'Perdón, hubo un problema de conexión. Probá de nuevo.';
-      }
-    }
-
-    // Guardar respuesta del asistente
-    await saveMessage({ session_id, role: 'assistant', content: assistantText, meta: { src: 'api' } });
-
-    return ok(res, { sessionId: session_id, message: assistantText });
+    // En Etapa 1 no hay session ni storage: devolvemos solo el mensaje
+    return respond(res, 200, { message: reply });
   } catch (e) {
-    console.log('[chat_handler_error]', e);
-    return bad(res, 'server_error', String(e), 500);
+    console.log('[chat_mock_error]', e);
+    return respond(res, 500, { error: 'server_error', message: String(e) });
   }
 }
