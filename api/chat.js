@@ -1,7 +1,10 @@
-// api/chat.js — ETAPA 1 (MOCK) con etiqueta visible
+// api/chat.js — Etapa 2
 export const config = { runtime: 'nodejs' };
 
-const STAGE = 'etapa1-mock';
+import { randomUUID } from 'crypto';
+
+const OPENAI_KEY = process.env.OPENAI_API_KEY || '';
+const STAGE = 'etapa2-openai';
 
 async function readBody(req) {
   if (req.body && typeof req.body === 'object') return req.body;
@@ -18,13 +21,11 @@ function respond(res, status, data) {
   res.end(JSON.stringify(data));
 }
 
-function mockReply(userText = '') {
-  const t = (userText || '').toLowerCase();
-  if (t.includes('infiel')) return 'Uhh, te la mandaste. O lo contás y bancás la tormenta, o lo callás y cargás la mochila vos solo. Elegí.';
-  if (t.includes('ansiedad')) return 'La ansiedad te come la cabeza. Hoy 3 minutos de respiración 4-6; mañana 20’ de caminata sin pantalla.';
-  if (t.includes('pareja') || t.includes('separar')) return 'Si está floja, dos caminos: hablar en serio y buscar arreglo, o cortar por lo sano. Aferrarte por miedo no sirve.';
-  return 'Te escucho. Decime en una línea qué te preocupa y vamos directo a opciones.';
-}
+// Prompt con tono “psicólogo directo”
+const SYSTEM_PROMPT = `
+Sos un psicólogo experto que habla directo, sin vueltas, como alguien que canta las 40.
+Usá frases cortas y claras, máximo 5–6 frases. No repitas siempre el mismo cierre: adaptalo a la conversación.
+`;
 
 export default async function handler(req, res) {
   if (req.method === 'GET') {
@@ -35,14 +36,45 @@ export default async function handler(req, res) {
   }
 
   try {
+    if (!OPENAI_KEY) {
+      return respond(res, 500, { error: 'no_openai_key', message: 'Falta OPENAI_API_KEY en Vercel', stage: STAGE });
+    }
+
     const body = await readBody(req);
     const text = (body.text ?? '').toString().trim();
     if (!text) return respond(res, 400, { error: 'no_text', message: 'Falta "text"', stage: STAGE });
 
-    const reply = mockReply(text);
-    // 👇 Pegamos la etiqueta de etapa al mensaje para verlo en la UI
-    return respond(res, 200, { sessionId: 'mock-session', message: `[${STAGE}] ${reply}` });
+    // Generar sessionId si no hay
+    const sessionId = body.sessionId || randomUUID();
+
+    // Llamada a OpenAI
+    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${OPENAI_KEY}` },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',  // si da 404 probá 'gpt-4o' o 'gpt-4o-mini-2024-07-18'
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user', content: text }
+        ],
+        temperature: 0.7,
+        max_tokens: 350
+      })
+    });
+
+    let reply = '⚠️ Error inesperado con OpenAI.';
+    if (r.ok) {
+      const j = await r.json();
+      reply = j?.choices?.[0]?.message?.content?.trim() || reply;
+    } else {
+      const t = await r.text();
+      console.error('[openai_error]', r.status, t);
+      reply = `⚠️ OpenAI ${r.status}: ${t}`;
+    }
+
+    return respond(res, 200, { sessionId, message: `[${STAGE}] ${reply}` });
   } catch (e) {
+    console.error('[chat_handler_error]', e);
     return respond(res, 500, { error: 'server_error', message: String(e), stage: STAGE });
   }
 }
