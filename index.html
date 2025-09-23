@@ -161,6 +161,12 @@
     .hidden { display: none !important; }
     .fade-in { animation: fade .18s ease-out; }
     @keyframes fade { from { opacity: 0; transform: translateY(4px);} to { opacity:1; transform:none;} }
+
+    @media (max-width: 768px) {
+      textarea#input::placeholder {
+        content: "Escribí tu mensaje…";
+      }
+    }
   </style>
 </head>
 <body>
