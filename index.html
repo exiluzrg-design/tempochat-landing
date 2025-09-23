@@ -3,39 +3,53 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>TempoChat — Etapa 1 (Mock)</title>
+  <title>TempoChat</title>
   <style>
     :root { color-scheme: dark; }
     body { margin:0; background:#0b0b0c; color:#e8e8ec; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; }
     .wrap { max-width: 760px; margin: 0 auto; padding: 24px; }
     .card { background:#141417; border:1px solid #202025; border-radius:14px; padding:16px; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
-    #chat { margin-top:16px; display:flex; flex-direction:column; gap:10px; max-height:55vh; overflow:auto; }
-    .msg { padding:10px 14px; border-radius:12px; max-width: 80%; }
+    #chat { margin-top:16px; display:flex; flex-direction:column; gap:10px; max-height:60vh; overflow:auto; }
+    .msg { padding:10px 14px; border-radius:12px; max-width: 80%; white-space: pre-wrap; }
     .user { align-self:flex-end; background:#1d4ed8; color:#f0f6ff; }
     .assistant { align-self:flex-start; background:#242427; color:#e8e8ec; border:1px solid #2b2b30; }
     .row { display:flex; gap:8px; margin-top:12px; }
     input { flex:1; padding:12px; border-radius:10px; border:1px solid #2a2a2f; background:#0e0e10; color:#e8e8ec; }
     button { padding:12px 14px; border-radius:10px; border:0; background:#22c55e; color:#0b0b0c; font-weight:600; cursor:pointer; }
+    .toolbar { display:flex; gap:8px; margin:10px 0 0; }
+    .pill { font-size:12px; opacity:.7; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1>TempoChat</h1>
-    <p>Hola, ¿cómo andás? Esta charla dura 10 minutos, así que arrancá con lo que tengas en mente.</p>
+    <p class="pill">Memoria: cliente (context) + servidor (Redis si está habilitado)</p>
+
     <div class="card">
       <div id="chat"></div>
+
       <div class="row">
         <input id="text" placeholder="Escribí tu mensaje..." autocomplete="off" />
         <button id="send" type="button">Enviar</button>
+      </div>
+
+      <div class="toolbar">
+        <button id="clearLocal" type="button">Limpiar memoria local</button>
+        <button id="clearServer" type="button">Limpiar memoria del servidor</button>
       </div>
     </div>
   </div>
 
   <script>
-    const chatBox  = document.getElementById('chat');
-    const input    = document.getElementById('text');
-    const sendBtn  = document.getElementById('send');
-    let sessionId  = null;
+    const chatBox   = document.getElementById('chat');
+    const input     = document.getElementById('text');
+    const sendBtn   = document.getElementById('send');
+    const clearLoc  = document.getElementById('clearLocal');
+    const clearSrv  = document.getElementById('clearServer');
+
+    // === Memoria del cliente ===
+    let sessionId = localStorage.getItem('tempochat_session') || null;
+    const context = []; // historial corto que viajara al backend
 
     function add(role, text) {
       const div = document.createElement('div');
@@ -43,57 +57,76 @@
       div.textContent = text;
       chatBox.appendChild(div);
       chatBox.scrollTop = chatBox.scrollHeight;
+
+      // guardamos en contexto (últimos 12 mensajes)
+      context.push({ role, content: text });
+      if (context.length > 12) context.splice(0, context.length - 12);
+    }
+
+    async function callAPI(path, payload) {
+      const res = await fetch(`${location.origin}${path}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload || {})
+      });
+      if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+      return res.json();
     }
 
     async function handleSend() {
-      if (!input) {
-        add('assistant', '⚠️ No encuentro el input del mensaje.');
-        return;
-      }
-
-      const raw  = input.value ?? '';
+      const raw  = input?.value ?? '';
       const text = String(raw).trim();
-      if (!text) {
-        add('assistant', '⚠️ Escribí algo antes de enviar.');
-        return;
-      }
+      if (!text) { add('assistant', '⚠️ Escribí algo antes de enviar.'); return; }
 
       add('user', text);
       input.value = '';
 
       try {
-        const API = `${location.origin}/api/chat`;
-        const res = await fetch(API, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text, sessionId })
-        });
+        const data = await callAPI('/api/chat', { text, sessionId, context });
 
-        if (!res.ok) {
-          const errTxt = await res.text();
-          console.error('API error', res.status, errTxt);
-          add('assistant', `⚠️ Error ${res.status}: ${errTxt}`);
-          return;
+        // persistir sessionId para futuras vueltas/recargas
+        if (data.sessionId && data.sessionId !== sessionId) {
+          sessionId = data.sessionId;
+          localStorage.setItem('tempochat_session', sessionId);
         }
 
-        const data = await res.json();
-        sessionId = data.sessionId || sessionId;
-        add('assistant', data.message || '⚠️ Sin mensaje');
+        add('assistant', data.message || 'Sin mensaje');
+
       } catch (e) {
         console.error(e);
-        add('assistant', '⚠️ Problema de red. Probá de nuevo.');
+        add('assistant', '⚠️ Problema de red: ' + e.message);
       }
     }
 
-    if (sendBtn) sendBtn.addEventListener('click', handleSend);
-    if (input) {
-      input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          handleSend();
-        }
-      });
+    // limpiar solo memoria local (cliente)
+    function clearLocalMemory() {
+      localStorage.removeItem('tempochat_session');
+      sessionId = null;
+      context.length = 0;
+      add('assistant', 'Memoria local limpia. Seguimos.');
     }
+
+    // limpiar memoria del servidor (Redis)
+    async function clearServerMemory() {
+      try {
+        if (!sessionId) { add('assistant', 'No hay sesión activa aún. Mandá un mensaje primero.'); return; }
+        await callAPI('/api/memory-clear', { sessionId });
+        add('assistant', 'Memoria del servidor limpia para esta sesión.');
+      } catch (e) {
+        add('assistant', '⚠️ No pude limpiar la memoria del servidor: ' + e.message);
+      }
+    }
+
+    // Eventos
+    sendBtn?.addEventListener('click', handleSend);
+    input?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); handleSend(); }
+    });
+    clearLoc?.addEventListener('click', clearLocalMemory);
+    clearSrv?.addEventListener('click', clearServerMemory);
+
+    // Mensaje inicial suave
+    add('assistant', 'Hola, ¿qué tenés en la cabeza? Decime en una línea y vamos al grano.');
   </script>
 </body>
 </html>
