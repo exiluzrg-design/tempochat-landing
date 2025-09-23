@@ -1,4 +1,4 @@
-// api/chat.js — ETAPA 1 (MOCK) — sin OpenAI ni Supabase
+// api/chat.js — ETAPA 1 (MOCK) con etiqueta visible
 export const config = { runtime: 'nodejs' };
 
 const STAGE = 'etapa1-mock';
@@ -18,7 +18,6 @@ function respond(res, status, data) {
   res.end(JSON.stringify(data));
 }
 
-// Respuesta simple en tono directo (mock)
 function mockReply(userText = '') {
   const t = (userText || '').toLowerCase();
   if (t.includes('infiel')) return 'Uhh, te la mandaste. O lo contás y bancás la tormenta, o lo callás y cargás la mochila vos solo. Elegí.';
@@ -28,11 +27,9 @@ function mockReply(userText = '') {
 }
 
 export default async function handler(req, res) {
-  // GET: mostrar “banner” de versión para confirmar que este archivo está vivo
   if (req.method === 'GET') {
     return respond(res, 200, { ok: true, stage: STAGE, hint: 'Usá POST para chatear' });
   }
-
   if (req.method !== 'POST') {
     return respond(res, 405, { error: 'method_not_allowed', message: 'Use POST', stage: STAGE });
   }
@@ -43,11 +40,9 @@ export default async function handler(req, res) {
     if (!text) return respond(res, 400, { error: 'no_text', message: 'Falta "text"', stage: STAGE });
 
     const reply = mockReply(text);
-
-    // Respuesta que tu front ya espera
-    return respond(res, 200, { sessionId: 'mock-session', message: reply, stage: STAGE });
+    // 👇 Pegamos la etiqueta de etapa al mensaje para verlo en la UI
+    return respond(res, 200, { sessionId: 'mock-session', message: `[${STAGE}] ${reply}` });
   } catch (e) {
-    console.log('[chat_mock_error]', e);
     return respond(res, 500, { error: 'server_error', message: String(e), stage: STAGE });
   }
 }
