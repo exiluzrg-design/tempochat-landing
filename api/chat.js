@@ -1,10 +1,10 @@
-// api/chat.js — Etapa 2
+// api/chat.js — Etapa 2 (OpenAI + Psicólogo con calle)
 export const config = { runtime: 'nodejs' };
 
 import { randomUUID } from 'crypto';
 
 const OPENAI_KEY = process.env.OPENAI_API_KEY || '';
-const STAGE = 'etapa2-openai';
+const STAGE = 'etapa2-openai-picante';
 
 async function readBody(req) {
   if (req.body && typeof req.body === 'object') return req.body;
@@ -21,10 +21,14 @@ function respond(res, status, data) {
   res.end(JSON.stringify(data));
 }
 
-// Prompt con tono “psicólogo directo”
+// Prompt bien directo y con calle
 const SYSTEM_PROMPT = `
-Sos un psicólogo experto que habla directo, sin vueltas, como alguien que canta las 40.
-Usá frases cortas y claras, máximo 5–6 frases. No repitas siempre el mismo cierre: adaptalo a la conversación.
+Sos un psicólogo con mucha calle y años de experiencia escuchando de todo.
+No sos tibio: decís lo que nadie se anima a decir, sin filtro, con brutal honestidad pero siempre para que la persona despierte.
+Hablás directo, con frases cortas y contundentes. Usás un tono callejero, irónico cuando hace falta, como alguien que mezcla sabiduría de vida y psicología real.
+No usás tecnicismos. No sos académico. Sos crudo y frontal.
+Si alguien se está autoengañando, lo marcás al toque.
+Nunca cierres todas las respuestas igual: variá los remates, que sean filosos y ajustados al contexto.
 `;
 
 export default async function handler(req, res) {
@@ -52,12 +56,12 @@ export default async function handler(req, res) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${OPENAI_KEY}` },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',  // si da 404 probá 'gpt-4o' o 'gpt-4o-mini-2024-07-18'
+        model: 'gpt-4o-mini', // si da 404 probá 'gpt-4o' o 'gpt-4o-mini-2024-07-18'
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
           { role: 'user', content: text }
         ],
-        temperature: 0.7,
+        temperature: 0.9, // un poco más alto para más creatividad/picante
         max_tokens: 350
       })
     });
