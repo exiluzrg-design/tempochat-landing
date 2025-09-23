@@ -32,9 +32,11 @@
     .error{ color:#ff7a7a; font-size:13px; margin-top:6px; display:none }
     .timer{ font-size:14px; color:var(--muted); margin:6px 0; text-align:center }
 
+    /* Nudge minuto 9 */
     .nudge{ display:none; gap:8px; justify-content:center; margin:6px 0 }
     .ghost{ background:transparent; border:1px solid var(--line); color:var(--text) }
 
+    /* Banner de cierre */
     .closing-banner{ position:fixed; left:0; right:0; bottom:20px; margin:0 auto; max-width:1080px; background:#1b1b20; border:1px solid var(--line); border-radius:12px; padding:10px 14px; color:var(--muted); text-align:center; display:none; box-shadow:0 8px 24px rgba(0,0,0,.3); }
   </style>
 </head>
@@ -56,6 +58,7 @@
         </div>
         <div class="timer" id="timer">Tiempo restante: 10:00</div>
 
+        <!-- Nudge: opciones a los 9 minutos -->
         <div class="nudge" id="nudge">
           <button class="btn" id="addTime">Agregar 5′</button>
           <button class="btn ghost" id="wrapUp">Vamos cerrando</button>
@@ -74,46 +77,46 @@
   <div id="closingBanner" class="closing-banner">Cierre en curso… generando conclusión final</div>
 
   <script>
-    // --------- elementos ----------
+    // --------- elementos y estado ----------
     let currentReqId = 0;
     const $ = (id) => document.getElementById(id);
-    const chatlog = $('chatlog'), typing=$('typing'), errorBox=$('error');
-    const input = $('msg'), btn = $('send');
-    const timerEl = $('timer'), nudge=$('nudge');
-    const btnAddTime=$('addTime'), btnWrap=$('wrapUp');
-    const closingBanner=$('closingBanner');
-    const inputRow = document.querySelector('.row');
+    const chatlog = $('chatlog');
+    const typing = $('typing');
+    const errorBox = $('error');
+    const input = $('msg');
+    const btn = $('send');
+    const timerEl = $('timer');
+    const nudge = $('nudge');
+    const btnAddTime = $('addTime');
+    const btnWrap = $('wrapUp');
+    const closingBanner = $('closingBanner');
 
-    let sessionSeconds = 600, interval, askedAtNine = false;
-    let closing = false, retriedAfter410 = false;
+    let sessionSeconds = 600; // 10 minutos
+    let interval; let askedAtNine = false;
+    let closing = false;       // evita cierres duplicados
+    let retriedAfter410 = false;
 
+    // Autosend (sube automáticamente el texto del chat)
     let autosendTimer = null;
-    const AUTOSEND_MS = 1700, AUTOSEND_MIN_CHARS = 6, AUTOSEND_ENDING = /[.!?…)]$/;
+    const AUTOSEND_MS = 1700;             // pausa de 1.7s sin tipear
+    const AUTOSEND_MIN_CHARS = 6;         // mínimo de caracteres
+    const AUTOSEND_ENDING = /[.!?…)]$/;   // o termina en signo/punto
 
-    // Apertura automática: experto en psicología + mirada callejera (sin declararse psicólogo)
+    // Apertura automática: SOLO nombre + cómo se siente
     const OPENING_PROMPT = [
-      'Respondé con la perspectiva de alguien con mucho conocimiento en psicología y experiencia acompañando a personas en distintas situaciones.',
-      'Usá un tono cálido, rioplatense, cercano, directo y sin vueltas, como alguien que también caminó la calle.',
-      'No te presentes como psicólogo ni digas tu profesión.',
-      'Saludá en una sola oración y avisá que la sesión dura 10 minutos.',
-      'Invitá a la persona a empezar con lo que tenga en mente.'
+      'Abrí la sesión saludando y pedí dos datos: (1) nombre y (2) cómo se siente en una palabra.',
+      'Respondé breve (≤4 oraciones), proponé una mini-agenda de 3 pasos para aprovechar los 10 minutos y cerrá con una pregunta concreta.',
+      'Usá un tono cálido y rioplatense.'
     ].join(' ');
 
-    // --------- helpers ----------
-    function fmt(t){ const m=Math.floor(t/60), s=String(t%60).padStart(2,'0'); return `${m}:${s}`; }
+    // --------- helpers UI ----------
+    function fmt(t){ const m=Math.floor(t/60); const s=String(t%60).padStart(2,'0'); return `${m}:${s}`; }
     function updateTimer(){ timerEl.textContent = `Tiempo restante: ${fmt(sessionSeconds)}`; }
     function setTyping(on){ typing.style.display = on ? 'block' : 'none'; }
     function showError(msg){ errorBox.style.display='block'; errorBox.textContent = typeof msg==='string'? msg : JSON.stringify(msg); }
     function clearError(){ errorBox.style.display='none'; errorBox.textContent=''; }
     function addMessage(role,text){ const d=document.createElement('div'); d.className='msg '+role; d.textContent=String(text||''); chatlog.appendChild(d); chatlog.scrollTop = chatlog.scrollHeight; }
-
-    function setClosing(on){
-      closing = !!on;
-      closingBanner.style.display = closing ? 'block' : 'none';
-      nudge.style.display = 'none';
-      input.disabled = closing; btn.disabled = closing;
-      if (inputRow) inputRow.style.display = closing ? 'none' : '';
-    }
+    function setClosing(on){ closing = on; closingBanner.style.display = on ? 'block' : 'none'; input.disabled = on; btn.disabled = on; nudge.style.display = 'none'; }
 
     // --------- sesión local ----------
     function sidGet(){ return localStorage.getItem('tempochat.sid') || ''; }
@@ -131,7 +134,7 @@
       if(!r.ok) return null; return r.json();
     }
 
-    // --------- envío ----------
+    // --------- envío a backend ---------
     async function send(text){
       const reqId = ++currentReqId; clearError(); setTyping(true);
       const controller = new AbortController(); const to = setTimeout(()=>controller.abort(), 30000);
@@ -143,6 +146,7 @@
         });
         const raw = await res.text(); const json = safeJson(raw);
 
+        // sesión expirada: reset y reintento único
         if(res.status === 410 && !retriedAfter410){
           retriedAfter410 = true;
           await hardResetSession();
@@ -165,32 +169,18 @@
     // --------- cierre ----------
     async function requestClose(source){
       if(closing) return;
-      setClosing(true); clearInterval(interval);
+      setClosing(true);
       try{
         if(source === 'manual'){ addMessage('user','Hagamos un cierre.'); }
         else { addMessage('assistant','⏳ La sesión terminó. Preparando un cierre automático...'); }
-
-        const cierre = [
-          'Hacé un cierre entre 90 y 130 palabras, tono cálido rioplatense, cercano y directo, sin tecnicismos.',
-          'No digas tu profesión ni que sos psicólogo.',
-          '1) En 1–2 líneas, resumí lo central que la persona vino trabajando (si el contexto es escaso, hacé un resumen prudente y general).',
-          '2) Ofrecé una lectura breve de qué puede estar pasando y nombrá una emoción común que valide la experiencia.',
-          '3) Dejá UN paso concreto y simple para las próximas 24–48 horas (específico, alcanzable, ejemplo accionable).',
-          '4) Cerrá con una frase corta de aliento, sin prometer resultados mágicos.'
-        ].join(' ');
-
+        const cierre = 'Generá un cierre breve con la conclusión principal y una reflexión de lo charlado.';
         await send(cierre);
         await endSessionOnServer();
         sidClear();
-      }catch(e){
-        showError(e?.message || 'error cierre');
-      }finally{
-        // Siempre ocultamos el banner, pase lo que pase
-        closingBanner.style.display = 'none';
-      }
+      }catch(e){ showError(e?.message||'error cierre'); }
     }
 
-    // --------- timer ----------
+    // --------- timer (sin auto-extensión; con nudge a los 9m y auto-cierre al final/tras +5) ----------
     function startTimer(){
       clearInterval(interval); updateTimer(); askedAtNine = false; retriedAfter410 = false;
       interval = setInterval(async ()=>{
@@ -204,7 +194,9 @@
         }
 
         if(sessionSeconds===0){
-          await requestClose('timeout');
+          clearInterval(interval);
+          nudge.style.display = 'none';
+          await requestClose('timeout'); // cierre automático (también después de extender)
         }
       },1000);
     }
@@ -212,15 +204,15 @@
     function resetUI(){
       chatlog.innerHTML = '<div class="system">Bienvenido a la demo. Tenés 10 minutos para conversar. Empezá escribiendo abajo 👇</div>';
       sessionSeconds = 600; updateTimer(); setTyping(false); clearError();
-      setClosing(false);
+      input.disabled = false; btn.disabled = false; closingBanner.style.display = 'none';
+      closing = false; nudge.style.display = 'none';
     }
 
     async function hardResetSession(){
-      try { await endSessionOnServer(); } catch {}
-      sidClear(); resetUI(); startTimer();
+      await endSessionOnServer(); sidClear(); resetUI(); startTimer();
     }
 
-    // --------- autosend ----------
+    // --------- AUTOSEND: sube el texto automáticamente ----------
     function scheduleAutosend(){
       if(autosendTimer) clearTimeout(autosendTimer);
       autosendTimer = setTimeout(()=>{
@@ -244,22 +236,24 @@
     input.addEventListener('blur', ()=>{ const v = input.value.trim(); if(v){ addMessage('user', v); input.value=''; send(v); } });
 
     btnAddTime.addEventListener('click', async ()=>{
-      nudge.style.display = 'none';
       const resp = await extendSession(5);
       if(resp && resp.expiresAt){
-        sessionSeconds += 5*60;
-        addMessage('system','Se agregaron 5 minutos. Seguimos conversando y cierro automáticamente al finalizar.');
+        sessionSeconds += 5*60;      // extiende la cuenta regresiva
+        nudge.style.display = 'none'; // no volvemos a mostrar nudge
+        addMessage('system','Se agregaron 5 minutos. Haré un cierre automático al finalizar.');
+        // NOTA: no reponemos askedAtNine, así NO vuelve a aparecer el nudge en el +5
       }
     });
-    btnWrap.addEventListener('click', async ()=>{ await requestClose('manual'); });
 
-    // --------- arranque ----------
+    btnWrap.addEventListener('click', async ()=>{
+      nudge.style.display = 'none';
+      await requestClose('manual');
+    });
+
+    // --------- arranque limpio + apertura automática (nombre + cómo se siente) ----------
     (async function boot(){
-      setClosing(false);
       await hardResetSession();
       await send(OPENING_PROMPT);
-      input.disabled = false; btn.disabled = false;
-      if (inputRow) inputRow.style.display = '';
       input.focus();
     })();
   </script>
