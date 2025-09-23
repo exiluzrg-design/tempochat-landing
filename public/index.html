@@ -86,12 +86,13 @@
     let autosendTimer = null;
     const AUTOSEND_MS = 1700, AUTOSEND_MIN_CHARS = 6, AUTOSEND_ENDING = /[.!?…)]$/;
 
-    // Saludo breve (sin pedir datos)
+    // Apertura automática: experto en psicología + mirada callejera (sin declararse psicólogo)
     const OPENING_PROMPT = [
-      'Saludá en una sola oración, tono cálido rioplatense.',
-      'No hagas preguntas iniciales.',
-      'No pidas nombre ni cómo se siente.',
-      'Decí que la sesión dura 10 minutos y que puede empezar cuando quiera.'
+      'Respondé con la perspectiva de alguien con mucho conocimiento en psicología y experiencia acompañando a personas en distintas situaciones.',
+      'Usá un tono cálido, rioplatense, cercano, directo y sin vueltas, como alguien que también caminó la calle.',
+      'No te presentes como psicólogo ni digas tu profesión.',
+      'Saludá en una sola oración y avisá que la sesión dura 10 minutos.',
+      'Invitá a la persona a empezar con lo que tenga en mente.'
     ].join(' ');
 
     // --------- helpers ----------
@@ -164,7 +165,14 @@
       try{
         if(source === 'manual'){ addMessage('user','Hagamos un cierre.'); }
         else { addMessage('assistant','⏳ La sesión terminó. Preparando un cierre automático...'); }
-        const cierre = 'Generá un cierre breve con la conclusión principal y una reflexión de lo charlado.';
+        const cierre = [
+          'Hacé un cierre entre 90 y 130 palabras, tono cálido rioplatense, cercano y directo, sin tecnicismos.',
+          'No digas tu profesión ni que sos psicólogo.',
+          '1) En 1–2 líneas, resumí lo central que la persona vino trabajando (si el contexto es escaso, hacé un resumen prudente y general).',
+          '2) Ofrecé una lectura breve de qué puede estar pasando y nombrá una emoción común que valide la experiencia.',
+          '3) Dejá UN paso concreto y simple para las próximas 24–48 horas (específico, alcanzable, ejemplo accionable).',
+          '4) Cerrá con una frase corta de aliento, sin prometer resultados mágicos.'
+        ].join(' ');
         await send(cierre);
         await endSessionOnServer();
         sidClear();
@@ -178,7 +186,6 @@
         sessionSeconds = Math.max(sessionSeconds - 1, 0);
         updateTimer();
 
-        // nudge en el último minuto (si lo querés a los 9:00, cambiá 60 por 540)
         if(sessionSeconds===60 && !askedAtNine){
           askedAtNine = true;
           nudge.style.display = 'flex';
