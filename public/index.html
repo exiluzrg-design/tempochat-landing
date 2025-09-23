@@ -13,9 +13,11 @@
     header{ display:flex; align-items:center; justify-content:space-between; gap:16px; padding:12px 0; border-bottom:1px solid var(--line) }
     .brand{ display:flex; align-items:center; gap:10px }
     .logo{ width:28px; height:28px; border-radius:8px; background:linear-gradient(135deg,var(--brand),#7aa5ff) }
+
     .hero{ padding:28px 0 }
     .hero h1{ font-size:clamp(28px,4vw,44px); line-height:1.1; margin:0 0 10px }
     .hero p{ color:var(--muted); margin:0 0 18px }
+
     .chat{ display:flex; flex-direction:column; height:460px; margin-top:12px }
     .chatlog{ flex:1; overflow:auto; border:1px solid var(--line); border-radius:12px; padding:10px; background:var(--panel-2) }
     .msg{ max-width:80%; padding:10px 14px; border-radius:14px; margin:6px 0; line-height:1.45 }
@@ -29,8 +31,10 @@
     .row button{ background:var(--brand); color:#fff; border:none; border-radius:12px; padding:10px 14px; cursor:pointer }
     .error{ color:#ff7a7a; font-size:13px; margin-top:6px; display:none }
     .timer{ font-size:14px; color:var(--muted); margin:6px 0; text-align:center }
+
     .nudge{ display:none; gap:8px; justify-content:center; margin:6px 0 }
     .ghost{ background:transparent; border:1px solid var(--line); color:var(--text) }
+
     .closing-banner{ position:fixed; left:0; right:0; bottom:20px; margin:0 auto; max-width:1080px; background:#1b1b20; border:1px solid var(--line); border-radius:12px; padding:10px 14px; color:var(--muted); text-align:center; display:none; box-shadow:0 8px 24px rgba(0,0,0,.3); }
   </style>
 </head>
@@ -165,6 +169,7 @@
       try{
         if(source === 'manual'){ addMessage('user','Hagamos un cierre.'); }
         else { addMessage('assistant','⏳ La sesión terminó. Preparando un cierre automático...'); }
+
         const cierre = [
           'Hacé un cierre entre 90 y 130 palabras, tono cálido rioplatense, cercano y directo, sin tecnicismos.',
           'No digas tu profesión ni que sos psicólogo.',
@@ -173,10 +178,16 @@
           '3) Dejá UN paso concreto y simple para las próximas 24–48 horas (específico, alcanzable, ejemplo accionable).',
           '4) Cerrá con una frase corta de aliento, sin prometer resultados mágicos.'
         ].join(' ');
+
         await send(cierre);
         await endSessionOnServer();
         sidClear();
-      }catch(e){ showError(e?.message||'error cierre'); }
+      }catch(e){
+        showError(e?.message || 'error cierre');
+      }finally{
+        // Siempre ocultamos el banner, pase lo que pase
+        closingBanner.style.display = 'none';
+      }
     }
 
     // --------- timer ----------
