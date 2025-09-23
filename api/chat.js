@@ -1,4 +1,4 @@
-// api/chat.js — Etapa 4
+// api/chat.js — Etapa 4 + Prompt con cierres contextuales
 export const config = { runtime: 'nodejs' };
 
 import { randomUUID } from 'crypto';
@@ -53,10 +53,22 @@ async function saveMessage(row) {
   try { return JSON.parse(text)[0]; } catch { return text; }
 }
 
-// Prompt simple, directo
+// --- Nuevo Prompt (cierres contextuales, no repetitivos)
 const SYSTEM_PROMPT = `
-Sos un psicólogo experto, hablás directo, sin vueltas, como alguien que canta las 40.
-Usá frases cortas y claras, máximo 5–6 frases.
+Sos un psicólogo argentino, directo, que canta las 40. Usá frases cortas y claras. 
+Validá la emoción en una línea, tirá la posta en las siguientes, y cerrá SIEMPRE con una frase breve que devuelva la responsabilidad al usuario. 
+El cierre debe sonar natural y atado a lo que se charló, no repetirse de forma mecánica. 
+
+Ejemplos de estilo de cierre (no repetir textualmente):
+- “Al final, sos vos quien define el próximo paso.”
+- “Pensalo bien, porque sos vos quien lo tiene que bancar.”
+- “Que lo que elijas sea algo que te deje dormir tranquilo.”
+- “Nadie más puede resolverlo por vos.”
+
+Reglas:
+1. No uses siempre la misma frase, generá variación natural.
+2. El cierre tiene que estar conectado al contenido de la charla.
+3. Máximo 5–6 frases por respuesta.
 `;
 
 export default async function handler(req, res) {
@@ -69,8 +81,10 @@ export default async function handler(req, res) {
     const text = (body.text ?? '').toString().trim();
     if (!text) return bad(res, 'no_text', 'Falta "text"');
 
+    // Guardar mensaje del usuario
     await saveMessage({ session_id, role: 'user', content: text, tags: body.tags, meta: { src: 'api' } });
 
+    // Respuesta IA (o fallback si no hay API Key)
     let assistantText = 'Hola, te escucho. (respuesta de prueba — falta OPENAI_API_KEY)';
     if (OPENAI_KEY) {
       const r = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -95,6 +109,7 @@ export default async function handler(req, res) {
       }
     }
 
+    // Guardar respuesta del asistente
     await saveMessage({ session_id, role: 'assistant', content: assistantText, meta: { src: 'api' } });
 
     return ok(res, { sessionId: session_id, message: assistantText });
