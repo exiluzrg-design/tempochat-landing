@@ -1,80 +1,120 @@
-<!doctype html>
-<html lang="es">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>TempoChat</title>
-  <style>
-    :root { color-scheme: dark; }
-    body { margin:0; background:#0b0b0c; color:#e8e8ec; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji"; }
-    .wrap { max-width: 760px; margin: 0 auto; padding: 24px; }
-    header { padding: 24px 0 8px; }
-    h1 { font-size: 1.6rem; margin: 0 0 6px; }
-    p.lead { margin: 0 0 16px; color:#bdbdc2; }
-    .card { background:#141417; border:1px solid #202025; border-radius:14px; padding:16px; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
-    .row { display:flex; gap:8px; }
-    input[type="text"] { flex:1; background:#0e0e10; color:#e8e8ec; border:1px solid #2a2a2f; border-radius:10px; padding:12px 12px; }
-    button { background:#22c55e; color:#0b0b0c; border:0; border-radius:10px; padding:12px 14px; font-weight:600; cursor:pointer; }
-    button.secondary { background:#27272a; color:#e8e8ec; }
-    button:disabled { opacity:.6; cursor:not-allowed; }
-    #chat { margin-top:16px; display:flex; flex-direction:column; gap:10px; max-height:55vh; overflow:auto; padding-right:4px; }
-    .msg { padding:10px 14px; border-radius:12px; max-width: 80%; line-height:1.35; }
-    .user { align-self:flex-end; background:#1d4ed8; color:#f0f6ff; }
-    .assistant { align-self:flex-start; background:#242427; color:#e8e8ec; border:1px solid #2b2b30; }
-    footer { padding: 14px 0; color:#9a9aa1; font-size:.9rem; }
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <header>
-      <h1>TempoChat</h1>
-      <p class="lead">Hola, ¿cómo andás? Esta charla dura 10 minutos, así que arrancá con lo que tengas en mente.</p>
-    </header>
+// api/chat.js — Etapa 4 + Prompt con cierres contextuales
+export const config = { runtime: 'nodejs' };
 
-    <div class="card" id="step-name">
-      <div class="row">
-        <input id="name" type="text" placeholder="Decime tu nombre (ej: Tito)" />
-        <button id="start">Empezar</button>
-      </div>
-      <p style="margin:10px 0 0; color:#9a9aa1; font-size:.95rem">Primero tu nombre y ya entramos.</p>
-    </div>
+import { randomUUID } from 'crypto';
 
-    <div class="card" id="chat-card" style="display:none;">
-      <div id="chat"></div>
-      <div class="row" style="margin-top:12px;">
-        <input id="text" type="text" placeholder="Escribí tu mensaje..." />
-        <button id="send">Enviar</button>
-      </div>
-    </div>
+const SB_URL = process.env.SUPABASE_URL;
+const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const OPENAI_KEY = process.env.OPENAI_API_KEY || '';
 
-    <footer>
-      Demo Etapa 1 — UI sin backend (mañana lo conectamos).
-    </footer>
-  </div>
+function ok(res, data) { return res.status(200).json(data); }
+function bad(res, code, msg, status = 400) { return res.status(status).json({ error: code, message: msg }); }
 
-  <script>
-    const $name = document.getElementById('name');
-    const $start = document.getElementById('start');
-    const $stepName = document.getElementById('step-name');
-    const $chatCard = document.getElementById('chat-card');
-    const $chat = document.getElementById('chat');
-    const $text = document.getElementById('text');
-    const $send = document.getElementById('send');
+async function readBody(req) {
+  if (req.body && typeof req.body === 'object') return req.body;
+  if (req.body && typeof req.body === 'string') { try { return JSON.parse(req.body); } catch {} }
+  return await new Promise((resolve) => {
+    let data = '';
+    req.on('data', (c) => (data += c));
+    req.on('end', () => { try { resolve(JSON.parse(data || '{}')); } catch { resolve({}); } });
+  });
+}
 
-    let who = 'amigo';
+function resolveSessionId(body, headers) {
+  return body.sessionId || headers['x-session-id'] || headers['x-sessionid'] || randomUUID();
+}
 
-    function add(role, text) {
-      const div = document.createElement('div');
-      div.className = 'msg ' + role;
-      div.textContent = text;
-      $chat.appendChild(div);
-      $chat.scrollTop = $chat.scrollHeight;
+async function saveMessage(row) {
+  if (!SB_URL || !SB_KEY) throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
+  if (!row.session_id) throw new Error('Missing session_id');
+  if (!row.role) throw new Error('Missing role');
+  if (row.role !== 'user' && row.role !== 'assistant') throw new Error('Invalid role (must be user|assistant)');
+
+  const resp = await fetch(`${SB_URL}/rest/v1/messages`, {
+    method: 'POST',
+    headers: {
+      apikey: SB_KEY,
+      Authorization: `Bearer ${SB_KEY}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation'
+    },
+    body: JSON.stringify({
+      session_id: row.session_id,
+      role: row.role,
+      content: row.content ?? null,
+      tags: Array.isArray(row.tags) ? row.tags : (row.tags ? [row.tags] : []),
+      meta: row.meta ?? {}
+    })
+  });
+
+  const text = await resp.text();
+  console.log('[saveMessage]', row.role, resp.status, resp.ok, text);
+  if (!resp.ok) throw new Error(`saveMessage failed ${resp.status}: ${text}`);
+  try { return JSON.parse(text)[0]; } catch { return text; }
+}
+
+// --- Nuevo Prompt (cierres contextuales, no repetitivos)
+const SYSTEM_PROMPT = `
+Sos un psicólogo argentino, directo, que canta las 40. Usá frases cortas y claras. 
+Validá la emoción en una línea, tirá la posta en las siguientes, y cerrá SIEMPRE con una frase breve que devuelva la responsabilidad al usuario. 
+El cierre debe sonar natural y atado a lo que se charló, no repetirse de forma mecánica. 
+
+Ejemplos de estilo de cierre (no repetir textualmente):
+- “Al final, sos vos quien define el próximo paso.”
+- “Pensalo bien, porque sos vos quien lo tiene que bancar.”
+- “Que lo que elijas sea algo que te deje dormir tranquilo.”
+- “Nadie más puede resolverlo por vos.”
+
+Reglas:
+1. No uses siempre la misma frase, generá variación natural.
+2. El cierre tiene que estar conectado al contenido de la charla.
+3. Máximo 5–6 frases por respuesta.
+`;
+
+export default async function handler(req, res) {
+  try {
+    if (req.method !== 'POST') return bad(res, 'method_not_allowed', 'Use POST', 405);
+
+    const body = await readBody(req);
+    const session_id = resolveSessionId(body, req.headers);
+
+    const text = (body.text ?? '').toString().trim();
+    if (!text) return bad(res, 'no_text', 'Falta "text"');
+
+    // Guardar mensaje del usuario
+    await saveMessage({ session_id, role: 'user', content: text, tags: body.tags, meta: { src: 'api' } });
+
+    // Respuesta IA (o fallback si no hay API Key)
+    let assistantText = 'Hola, te escucho. (respuesta de prueba — falta OPENAI_API_KEY)';
+    if (OPENAI_KEY) {
+      const r = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${OPENAI_KEY}` },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: SYSTEM_PROMPT },
+            { role: 'user', content: text }
+          ],
+          temperature: 0.7,
+          max_tokens: 350
+        })
+      });
+      if (r.ok) {
+        const j = await r.json();
+        assistantText = j?.choices?.[0]?.message?.content?.trim() || assistantText;
+      } else {
+        const t = await r.text(); console.log('[openai_error:chat]', r.status, t);
+        assistantText = 'Perdón, hubo un problema de conexión. Probá de nuevo.';
+      }
     }
 
-    function mockReply(userText) {
-      // “Psicólogo directo” (mock, sin API)
-      const t = userText.toLowerCase();
-      if (t.includes('infiel') || t.includes('enga')) {
-        return "Uhh, te la mandaste. No está bien y lo sabés. O lo decís y te bancás la tormenta, o lo callás y cargás la mochila vos solo. Pensalo en serio y hacete cargo.";
-      }
-      if (t.includes('ansiedad') || t.includes(
+    // Guardar respuesta del asistente
+    await saveMessage({ session_id, role: 'assistant', content: assistantText, meta: { src: 'api' } });
+
+    return ok(res, { sessionId: session_id, message: assistantText });
+  } catch (e) {
+    console.log('[chat_handler_error]', e);
+    return bad(res, 'server_error', String(e), 500);
+  }
+}
