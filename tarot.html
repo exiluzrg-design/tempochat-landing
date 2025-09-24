@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Tarot IA — U con Light Sweep (responsive por breakpoint)</title>
+  <title>Tarot IA — U con Light Sweep (mobile overshoot)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
@@ -28,7 +28,7 @@
       width:min(1280px,95vw);
       height:min(720px,90vh);
       position:relative;
-      overflow:hidden;
+      overflow:hidden; /* cortamos lo que sobresale (mobile) */
       background: transparent;
     }
 
@@ -64,7 +64,7 @@
 
     .card svg{ position:absolute; inset:0; width:100%; height:100%; display:block; }
 
-    /* Breakpoints: sólo cambian tamaños de carta (layout es JS) */
+    /* Tamaños por breakpoint (el layout se maneja en JS) */
     @media (max-width:920px){ :root{ --card-w:110px; --card-h:192px; } }
     @media (max-width:640px){ :root{ --card-w:104px;  --card-h:182px; } }
   </style>
@@ -130,28 +130,24 @@
       return s;
     };
 
-    /* Layout U con lógica por breakpoint */
-    function computeLayoutByBreakpoint(stageW, stageH, cardW, cardH, total=22){
-      // márgenes
+    /* Layout por breakpoint */
+    function computeLayout(stageW, stageH, cardW, cardH, total=22){
       const mx = Math.max(cardW*0.6, 24);
       const myTop = Math.max(cardH*0.35, 16);
-      const myBottomDesktop = Math.max(cardH*0.5, 20);
-      const myBottomTablet  = Math.max(cardH*0.45, 18);
-      const myBottomMobile  = Math.max(cardH*0.4, 16);
 
       const cx = stageW / 2;
-
-      // radios base (se ajustan con márgenes)
-      const rx = Math.max((stageW/2) - mx - cardW/2, cardW*1.5);
+      const rxBase = Math.max((stageW/2) - mx - cardW/2, cardW*1.5);
       const ryBase = Math.max((stageH/2) - myTop - cardH/2, cardH*1.5);
 
-      // Desktop: U completa, centro más alto (como versión original)
+      // Desktop (>=920): U completa, centro alto
       if (stageW >= 920){
         const cy = Math.max(stageH * 0.44, myTop + cardH/2);
-        const ry = Math.min(ryBase, (stageH - myBottomDesktop - cardH/2) - cy);
+        const myBottom = Math.max(cardH*0.5, 20);
+        const ry = Math.min(ryBase, (stageH - myBottom - cardH/2) - cy);
+
         return Array.from({length: total}).map((_, i) => {
-          const t = i/(total-1), ang = Math.PI - t*Math.PI;
-          const x = cx + rx*Math.cos(ang);
+          const t = i/(total-1), ang = Math.PI - t*Math.PI; // 180..0
+          const x = cx + rxBase*Math.cos(ang);
           const y = cy + ry*Math.sin(ang);
           let rot = (ang*180/Math.PI)-90;
           if(i===total-1) rot += 12;
@@ -159,13 +155,15 @@
         });
       }
 
-      // Tablet: U completa, centro un poco más bajo
+      // Tablet (640–919): U completa, centro algo más bajo
       if (stageW >= 640){
         const cy = Math.max(stageH * 0.48, myTop + cardH/2);
-        const ry = Math.min(ryBase, (stageH - myBottomTablet - cardH/2) - cy);
+        const myBottom = Math.max(cardH*0.45, 18);
+        const ry = Math.min(ryBase, (stageH - myBottom - cardH/2) - cy);
+
         return Array.from({length: total}).map((_, i) => {
           const t = i/(total-1), ang = Math.PI - t*Math.PI;
-          const x = cx + rx*Math.cos(ang);
+          const x = cx + rxBase*Math.cos(ang);
           const y = cy + ry*Math.sin(ang);
           let rot = (ang*180/Math.PI)-90;
           if(i===total-1) rot += 12;
@@ -173,21 +171,31 @@
         });
       }
 
-      // Mobile: abanico real de 9 cartas en arco explícito alrededor del centro
-      const span = 9;                   // cantidad visible
-      const thetaSpan = 140 * Math.PI/180; // amplitud del abanico
-      const thetaMid  = Math.PI/2;      // 90° (parte baja de la U)
-      const thetaStart= thetaMid + thetaSpan/2; // empezamos a la derecha
-      const cy = Math.max(stageH * 0.50, myTop + cardH/2); // subido para que no quede tan abajo
-      const ry = Math.min(ryBase, (stageH - myBottomMobile - cardH/2) - cy);
+      /* Mobile (<640): abanico con overshoot lateral
+         - Mostramos 9 cartas mapeadas a un arco explícito.
+         - Aumentamos rx para que los extremos queden fuera del viewport => sensación de continuidad.
+         - Mantenemos ry para conservar la curva de U (sin “cerrarla” arriba en pantalla).
+      */
+      const span = 9;                           // visibles
+      const thetaSpan = 130 * Math.PI/180;      // amplitud del abanico visible
+      const thetaMid  = Math.PI/2;              // 90° (parte baja)
+      const thetaStart= thetaMid + thetaSpan/2; // empieza a la derecha
+
+      const cy = Math.max(stageH * 0.50, myTop + cardH/2);
+      const myBottom = Math.max(cardH*0.42, 18);
+      const ry = Math.min(ryBase, (stageH - myBottom - cardH/2) - cy);
+
+      // Overshoot horizontal: empuja extremos más allá del viewport
+      const overshootPx = cardW * 1.2;          // ajuste fino según gusto
+      const rx = rxBase + overshootPx;
 
       return Array.from({length: span}).map((_, i) => {
-        const tt = (span===1)? 0.5 : i/(span-1); // 0..1
-        const ang = thetaStart - tt*thetaSpan;   // barrido horario -> antihorario
+        const tt = (span===1)? 0.5 : i/(span-1);   // 0..1
+        const ang = thetaStart - tt*thetaSpan;     // derecha -> izquierda
         const x = cx + rx*Math.cos(ang);
         const y = cy + ry*Math.sin(ang);
         let rot = (ang*180/Math.PI)-90;
-        if(i===span-1) rot += 12;
+        if(i===span-1) rot += 10; // leve ajuste al último visible
         return {left:x-cardW/2, top:y-cardH/2, rot};
       });
     }
@@ -196,6 +204,14 @@
       const stageRef=useRef(null);
       const {w:vw,h:vh}=useWindowSize();
       const [run,setRun]=useState(0);
+
+      const readCardVars = () => {
+        const cs = getComputedStyle(document.documentElement);
+        return {
+          w: parseFloat(cs.getPropertyValue('--card-w')),
+          h: parseFloat(cs.getPropertyValue('--card-h')),
+        };
+      };
       const [cardVars,setCardVars]=useState(readCardVars());
       useEffect(()=>{ setCardVars(readCardVars()); }, [vw,vh]);
 
@@ -208,7 +224,7 @@
       }, [stageRef.current, vw, vh, run]);
 
       const layout = useMemo(
-        ()=>computeLayoutByBreakpoint(stageW, stageH, cardVars.w, cardVars.h, 22),
+        ()=>computeLayout(stageW, stageH, cardVars.w, cardVars.h, 22),
         [stageW, stageH, cardVars.w, cardVars.h]
       );
 
