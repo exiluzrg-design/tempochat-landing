@@ -1,312 +1,132 @@
 <!doctype html>
-<html lang="es" class="no-js">
+<html lang="es">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0b0b0c" />
-  <title>TempoChat — charlas privadas en 10 minutos</title>
-  <meta name="description" content="Sesiones privadas de 10 minutos, sin registro, 24/7 y con memoria de conversación. Privacidad real y foco en lo que necesitás ahora." />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TempoChat</title>
   <style>
-    /* ===== Reset & base ===== */
-    *, *::before, *::after { box-sizing: border-box; }
-    html, body { height: 100%; }
-    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; background: #0b0b0c; color: #e8e8ec; }
-    :root {
-      --bg: #0b0b0c;
-      --panel: #141417;
-      --panel-2: #101013;
-      --text: #e8e8ec;
-      --muted: #a3a3ad;
-      --brand: #7cc6ff;
-      --brand-2: #5b8cff;
-      --ok: #79ffa1;
-      --warn: #ffd166;
-      --danger: #ff6b6b;
-      --radius: 18px;
-      /* Fallback for browsers without dvh */
-      --app-h: 100vh;
-    }
-
-    @supports (height: 100dvh) { :root { --app-h: 100dvh; } }
-
-    ::selection { background: rgba(124,198,255,.25); }
-
-    html { overscroll-behavior-y: none; }
-
-    /* ===== App shell ===== */
-    .app {
-      min-height: var(--app-h);
-      display: flex;
-      flex-direction: column;
-      background:
-        radial-gradient(1200px 1200px at 120% -20%, rgba(91,140,255,.15), transparent 50%),
-        radial-gradient(900px 900px at -20% 10%, rgba(124,198,255,.1), transparent 60%),
-        linear-gradient(180deg, var(--bg), #09090a 30%, #08080a);
-      position: relative;
-      isolation: isolate;
-    }
-
-    header.site {
-      position: sticky; top: 0; z-index: 5;
-      backdrop-filter: saturate(140%) blur(8px);
-      -webkit-backdrop-filter: saturate(140%) blur(8px);
-      background: color-mix(in oklab, var(--panel) 82%, transparent);
-      border-bottom: 1px solid rgba(255,255,255,.06);
-    }
-
-    .wrap { max-width: 980px; margin: 0 auto; padding: 14px 16px; }
-
-    .brand { display: flex; align-items: center; gap: 12px; }
-    .logo {
-      width: 28px; height: 28px; border-radius: 8px;
-      background: conic-gradient(from 220deg, var(--brand), var(--brand-2), var(--ok));
-      filter: drop-shadow(0 0 20px rgba(124,198,255,.35));
-    }
-    .title { font-weight: 700; letter-spacing: .2px; }
-    .subtitle { color: var(--muted); font-size: 13.5px; }
-
-    /* ===== Benefits row ===== */
-    .benefits { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 10px; margin-top: 10px; }
-    .chip { 
-      border: 1px solid rgba(255,255,255,.08);
-      background: linear-gradient(180deg, #141418, #0f0f14);
-      padding: 10px 12px; border-radius: 999px; font-size: 12.5px; color: #d6d6df;
-      display: flex; align-items: center; gap: 8px;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .dot { width: 8px; height: 8px; border-radius: 50%; background: #7cc6ff; box-shadow: 0 0 10px rgba(124,198,255,.7); }
-
-    @media (max-width: 860px) { .benefits { grid-template-columns: repeat(2, minmax(0,1fr)); } }
-
-    /* ===== Messages area ===== */
-    .messages {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start; /* todos a la izquierda por defecto */
-      gap: 12px;
-      padding: 18px 16px 12px;
-      max-width: 980px; margin: 0 auto; width: 100%;
-      overflow-y: auto; overscroll-behavior: contain;
-      -webkit-overflow-scrolling: touch; /* iOS smooth */
-      overflow-anchor: none; /* evita saltos al insertar nodos */
-      scroll-behavior: auto; /* controlado desde JS */
-    }
-
-    .bubble {
-      max-width: min(84%, 720px);
-      padding: 12px 14px;
-      border-radius: var(--radius);
-      background: #15151a;
-      border: 1px solid rgba(255,255,255,.06);
-      line-height: 1.4; font-size: 15px; color: #eaeaf1;
-      box-shadow: 0 6px 22px rgba(0,0,0,.28);
-      position: relative;
-      word-wrap: break-word; word-break: break-word;
-    }
-    .bubble .meta { margin-top: 6px; font-size: 12px; color: var(--muted); }
-
-    .bubble.bot { background: linear-gradient(180deg, #16161c, #121217); border: 1px solid rgba(124,198,255,.18); }
-    .bubble.me  { margin-left: auto; background: linear-gradient(180deg, #1b2030, #0f1422); border: 1px solid rgba(91,140,255,.28); }
-
-    /* ===== Composer ===== */
-    .composer-wrap {
-      position: sticky; bottom: 0; z-index: 10;
-      background: linear-gradient(180deg, rgba(16,16,20,.2), rgba(16,16,20,.75));
-      backdrop-filter: blur(8px) saturate(140%);
-      -webkit-backdrop-filter: blur(8px) saturate(140%);
-      border-top: 1px solid rgba(255,255,255,.06);
-      padding-bottom: max(10px, env(safe-area-inset-bottom));
-    }
-    form.composer { max-width: 980px; margin: 0 auto; width: 100%; display: grid; grid-template-columns: 1fr auto; gap: 10px; padding: 10px 12px; }
-
-    textarea#input {
-      resize: none; min-height: 44px; max-height: 160px;
-      padding: 12px 14px; border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.08);
-      outline: none; background: #0f0f14; color: var(--text);
-      line-height: 1.35; font-size: 15px;
-      caret-color: var(--brand);
-      box-shadow: inset 0 0 0 1px rgba(124,198,255,.08);
-    }
-
-    button#send { padding: 0 16px; border-radius: 14px; border: 1px solid rgba(255,255,255,.1); background: linear-gradient(180deg, #1a1a22, #12121a); color: #eaeaf1; font-weight: 600; letter-spacing: .2px; cursor: pointer; box-shadow: 0 6px 22px rgba(0,0,0,.25); transition: transform .06s ease, box-shadow .2s ease, background .2s ease; }
-    button#send:active { transform: translateY(1px); box-shadow: 0 3px 14px rgba(0,0,0,.28); }
-    button[disabled] { opacity: .6; cursor: not-allowed; }
-
-    .hidden { display: none !important; }
-    .fade-in { animation: fade .18s ease-out; }
-    @keyframes fade { from { opacity: 0; transform: translateY(4px);} to { opacity:1; transform:none;} }
-
-    .sentinel{ height:1px; width:100%; }
+    :root { color-scheme: dark; }
+    body { margin:0; background:#0b0b0c; color:#e8e8ec; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; }
+    .wrap { max-width: 760px; margin: 0 auto; padding: 24px; }
+    .card { background:#141417; border:1px solid #202025; border-radius:14px; padding:16px; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+    #chat { margin-top:16px; display:flex; flex-direction:column; gap:10px; max-height:60vh; overflow:auto; }
+    .msg { padding:10px 14px; border-radius:12px; max-width: 80%; white-space: pre-wrap; }
+    .user { align-self:flex-end; background:#1d4ed8; color:#f0f6ff; }
+    .assistant { align-self:flex-start; background:#242427; color:#e8e8ec; border:1px solid #2b2b30; }
+    .row { display:flex; gap:8px; margin-top:12px; }
+    input { flex:1; padding:12px; border-radius:10px; border:1px solid #2a2a2f; background:#0e0e10; color:#e8e8ec; }
+    button { padding:12px 14px; border-radius:10px; border:0; background:#22c55e; color:#0b0b0c; font-weight:600; cursor:pointer; }
+    .toolbar { display:flex; gap:8px; margin:10px 0 0; }
+    .pill { font-size:12px; opacity:.7; }
   </style>
 </head>
 <body>
-  <div class="app" id="app">
-    <header class="site">
-      <div class="wrap">
-        <div class="brand">
-          <div class="logo" aria-hidden="true"></div>
-          <div>
-            <div class="title">TempoChat</div>
-            <div class="subtitle">Charlas privadas en 10 minutos — sin registro</div>
-          </div>
-        </div>
-        <div class="benefits" aria-label="beneficios tempochat">
-          <div class="chip"><span class="dot"></span>Privado y anónimo</div>
-          <div class="chip"><span class="dot"></span>Disponible 24/7</div>
-          <div class="chip"><span class="dot"></span>Sin registro ni apps</div>
-          <div class="chip"><span class="dot"></span>Memoria dentro de la sesión</div>
-          <div class="chip"><span class="dot"></span>Cierre guiado en 10′</div>
-        </div>
-      </div>
-    </header>
+  <div class="wrap">
+    <h1>TempoChat</h1>
+    <p class="pill">Memoria: cliente (context) + servidor (Redis si está habilitado)</p>
 
-    <main class="messages" id="messages" aria-live="polite" aria-label="Historial de conversación">
-      <div class="bubble bot fade-in">
-        Hola, ¿cómo andás? A veces la vida nos pone un poco desorientados. Contame, ¿qué te está pasando? Estoy acá para escucharte.
-        <div class="meta">TempoChat</div>
-      </div>
-      <div class="sentinel" id="sentinel" aria-hidden="true"></div>
-    </main>
+    <div class="card">
+      <div id="chat"></div>
 
-    <div class="composer-wrap">
-      <form id="composer" class="composer" autocomplete="off">
-        <textarea id="input" placeholder="Escribí tu mensaje…" aria-label="Escribí tu mensaje"></textarea>
-        <button id="send" type="submit">Enviar</button>
-      </form>
+      <div class="row">
+        <input id="text" placeholder="Escribí tu mensaje..." autocomplete="off" />
+        <button id="send" type="button">Enviar</button>
+      </div>
+
+      <div class="toolbar">
+        <button id="clearLocal" type="button">Limpiar memoria local</button>
+        <button id="clearServer" type="button">Limpiar memoria del servidor</button>
+      </div>
     </div>
   </div>
 
   <script>
-    // ===== Viewport fix =====
-    (function viewportFix() {
-      const setVH = () => {
-        const dvh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-        document.documentElement.style.setProperty('--app-h', dvh + 'px');
-      };
-      setVH();
-      window.addEventListener('resize', setVH);
-      if (window.visualViewport) visualViewport.addEventListener('resize', setVH);
-    })();
+    const chatBox   = document.getElementById('chat');
+    const input     = document.getElementById('text');
+    const sendBtn   = document.getElementById('send');
+    const clearLoc  = document.getElementById('clearLocal');
+    const clearSrv  = document.getElementById('clearServer');
 
-    // ===== Helpers =====
-    const $ = (sel, el=document) => el.querySelector(sel);
-    const messagesEl = $('#messages');
-    const inputEl = $('#input');
-    const sendBtn = $('#send');
-    const sentinel = $('#sentinel');
+    // === Memoria del cliente ===
+    let sessionId = localStorage.getItem('tempochat_session') || null;
+    const context = []; // historial corto que viajara al backend
 
-    // ===== Placeholder dinámico (mobile vs desktop) =====
-    function updatePlaceholder(){
-      const w = (window.visualViewport ? visualViewport.width : window.innerWidth) || 1024;
-      if (w <= 768) inputEl.setAttribute('placeholder', 'Escribí tu mensaje…');
-      else inputEl.setAttribute('placeholder', 'Escribí tu mensaje… (Shift + Enter para salto de línea)');
-    }
-    updatePlaceholder();
-    window.addEventListener('resize', updatePlaceholder);
-    if (window.visualViewport) visualViewport.addEventListener('resize', updatePlaceholder);
-
-    // ===== Session (memoria por sesión) =====
-    const LS_KEY = 'tempochat_session';
-    function ensureSessionId() {
-      let sid = localStorage.getItem(LS_KEY);
-      if (!sid) {
-        sid = (crypto && crypto.randomUUID) ? crypto.randomUUID() : 'sid_' + Math.random().toString(36).slice(2);
-        localStorage.setItem(LS_KEY, sid);
-      }
-      return sid;
-    }
-    let sessionId = ensureSessionId();
-
-    // ===== AutoScroll manager =====
-    let autoScroll = true;
-    const bottomThreshold = 120; // px
-
-    function isNearBottom(){
-      return (messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight) <= bottomThreshold;
-    }
-    function scrollToBottom(smooth=true){
-      try { sentinel.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'end' }); }
-      catch { messagesEl.scrollTo({ top: messagesEl.scrollHeight, behavior: smooth ? 'smooth' : 'auto' }); }
-    }
-    function bumpScroll(){ if (autoScroll) scrollToBottom(true); }
-
-    messagesEl.addEventListener('scroll', () => { autoScroll = isNearBottom(); });
-    const ro = new ResizeObserver(() => bumpScroll());
-    ro.observe(messagesEl);
-
-    // ===== UI helpers =====
-    function appendMessage(role, text) {
+    function add(role, text) {
       const div = document.createElement('div');
-      div.className = `bubble ${role === 'user' ? 'me' : 'bot'} fade-in`;
-      div.innerText = text;
-      const meta = document.createElement('div');
-      meta.className = 'meta';
-      meta.textContent = role === 'user' ? 'Vos' : 'TempoChat';
-      div.appendChild(meta);
-      messagesEl.insertBefore(div, sentinel);
-      requestAnimationFrame(bumpScroll);
+      div.className = 'msg ' + role;
+      div.textContent = text;
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      // guardamos en contexto (últimos 12 mensajes)
+      context.push({ role, content: text });
+      if (context.length > 12) context.splice(0, context.length - 12);
     }
 
-    function setSending(sending) { sendBtn.disabled = sending; inputEl.disabled = sending; }
+    async function callAPI(path, payload) {
+      const res = await fetch(`${location.origin}${path}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload || {})
+      });
+      if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+      return res.json();
+    }
 
-    // ===== Network =====
-    async function sendMessage(text) {
-      setSending(true);
-      appendMessage('user', text);
+    async function handleSend() {
+      const raw  = input?.value ?? '';
+      const text = String(raw).trim();
+      if (!text) { add('assistant', '⚠️ Escribí algo antes de enviar.'); return; }
+
+      add('user', text);
+      input.value = '';
+
       try {
-        const res = await fetch('/api/chat', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Session-Id': sessionId // por compatibilidad con backends que leen header
-          },
-          body: JSON.stringify({ text, sessionId })
-        });
+        const data = await callAPI('/api/chat', { text, sessionId, context });
 
-        if (!res.ok) {
-          let msg = 'Perdón, hubo un problema de conexión. Probá de nuevo.';
-          try { const j = await res.json(); if (j && j.message) msg = j.message; } catch {}
-          appendMessage('assistant', msg);
-          return;
-        }
-
-        const data = await res.json();
-        const reply = data.assistant || data.message || data.reply || '…';
-        if (data.sessionId) { // si el backend devuelve un id, lo respetamos y persistimos
+        // persistir sessionId para futuras vueltas/recargas
+        if (data.sessionId && data.sessionId !== sessionId) {
           sessionId = data.sessionId;
-          localStorage.setItem(LS_KEY, sessionId);
+          localStorage.setItem('tempochat_session', sessionId);
         }
-        appendMessage('assistant', reply);
+
+        add('assistant', data.message || 'Sin mensaje');
+
       } catch (e) {
-        appendMessage('assistant', 'Perdón, hubo un problema de red.');
-      } finally {
-        setSending(false);
-        inputEl.focus();
+        console.error(e);
+        add('assistant', '⚠️ Problema de red: ' + e.message);
       }
     }
 
-    // ===== Events =====
-    $('#composer').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const text = inputEl.value.trim();
-      if (!text) return;
-      inputEl.value = '';
-      sendMessage(text);
-    });
+    // limpiar solo memoria local (cliente)
+    function clearLocalMemory() {
+      localStorage.removeItem('tempochat_session');
+      sessionId = null;
+      context.length = 0;
+      add('assistant', 'Memoria local limpia. Seguimos.');
+    }
 
-    inputEl.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        $('#composer').dispatchEvent(new Event('submit'));
+    // limpiar memoria del servidor (Redis)
+    async function clearServerMemory() {
+      try {
+        if (!sessionId) { add('assistant', 'No hay sesión activa aún. Mandá un mensaje primero.'); return; }
+        await callAPI('/api/memory-clear', { sessionId });
+        add('assistant', 'Memoria del servidor limpia para esta sesión.');
+      } catch (e) {
+        add('assistant', '⚠️ No pude limpiar la memoria del servidor: ' + e.message);
       }
+    }
+
+    // Eventos
+    sendBtn?.addEventListener('click', handleSend);
+    input?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); handleSend(); }
     });
+    clearLoc?.addEventListener('click', clearLocalMemory);
+    clearSrv?.addEventListener('click', clearServerMemory);
 
-    inputEl.addEventListener('focus', () => { setTimeout(() => bumpScroll(), 50); });
-
-    // util para borrar manualmente la sesión local
-    window.clearTempoChatSession = () => { localStorage.removeItem(LS_KEY); };
+    // Mensaje inicial suave
+    add('assistant', 'Hola, ¿qué tenés en la cabeza? Decime en una línea y vamos al grano.');
   </script>
 </body>
 </html>
