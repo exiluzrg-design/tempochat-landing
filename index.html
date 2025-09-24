@@ -33,15 +33,13 @@
     /* ===== Barra de beneficios ===== */
     .benefits {
       display:flex;
+      justify-content:center;
       gap:12px;
-      overflow-x:auto;
-      padding:10px 4px 14px;
-      scrollbar-width:none; /* Firefox */
+      flex-wrap:wrap;
+      margin-bottom:16px;
     }
-    .benefits::-webkit-scrollbar { display:none; }
 
     .benefit {
-      flex:0 0 auto;
       background: linear-gradient(135deg,#1e1e20,#2c2c30);
       border:1px solid #2f2f35;
       border-radius:20px;
@@ -144,12 +142,11 @@
   <div class="wrap">
     <h1>TempoChat</h1>
 
-    <!-- Beneficios en barra -->
+    <!-- Beneficios centrados -->
     <div class="benefits">
       <div class="benefit"><span>⚡</span> Sesiones 10 min</div>
       <div class="benefit"><span>🔒</span> 100% anónimo</div>
       <div class="benefit"><span>🌙</span> Disponible 24/7</div>
-      <div class="benefit"><span>🧠</span> Memoria activa</div>
       <div class="benefit"><span>💡</span> Bienestar y reflexión</div>
     </div>
 
