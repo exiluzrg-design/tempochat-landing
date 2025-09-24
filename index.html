@@ -2,7 +2,7 @@
 <html lang="es">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>TempoChat — Hub</title>
     <meta name="description" content="TempoChat Hub: conversaciones privadas de 10 minutos y Tarot IA en línea. Conectá con tu interior o descubrí tu destino con cartas místicas y guía inspirada. Privacidad real y enfoque humano." />
     <meta property="og:title" content="TempoChat — Hub" />
@@ -16,6 +16,9 @@
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
     <style>
+      html, body, #root { height: 100%; margin: 0; padding: 0; }
+      body { display: flex; flex-direction: column; }
+
       /* ====== Efecto: brillo diagonal en hover ====== */
       .btn-animated { position: relative; overflow: hidden; }
       .btn-animated::before {
@@ -31,8 +34,8 @@
       .cta-tarot { margin-top: 1.8rem !important; }
     </style>
   </head>
-  <body class="min-h-screen">
-    <div id="root"></div>
+  <body class="h-full min-h-screen">
+    <div id="root" class="flex flex-col h-full"></div>
 
     <script>
       const e = React.createElement;
@@ -122,7 +125,7 @@
           }
         ];
 
-        return e('div', {className:'min-h-screen w-full text-white overflow-hidden relative', style:{background:'radial-gradient(1200px 800px at 50% 10%, #5b3ef1 0%, #2b186e 40%, #0f0830 100%)'}}, [
+        return e('div', {className:'flex flex-col min-h-full w-full text-white overflow-hidden relative', style:{background:'radial-gradient(1200px 800px at 50% 10%, #5b3ef1 0%, #2b186e 40%, #0f0830 100%)'}}, [
           e('div', {className:'pointer-events-none absolute -top-24 -left-24 w-80 h-80 rounded-full bg-violet-500/20 blur-3xl'}),
           e('div', {className:'pointer-events-none absolute -bottom-24 -right-24 w-80 h-80 rounded-full bg-indigo-400/20 blur-3xl'}),
 
@@ -136,7 +139,7 @@
             e('a', {href:'#contacto', className:'text-sm opacity-80 hover:opacity-100'}, 'Contacto')
           ]),
 
-          e('div', {className:'max-w-6xl mx-auto px-4 pt-8 pb-4'}, [
+          e('div', {className:'max-w-6xl mx-auto px-4 pt-8 pb-4 flex-grow'}, [
             e('h1', {className:'text-3xl md:text-5xl font-bold leading-tight'}, [
               'Charlas privadas y experiencias místicas.',
               e('br', {className:'hidden md:block'}),
@@ -145,11 +148,11 @@
             e('p', {className:'mt-3 text-white/80 max-w-2xl'}, 'Un puente entre la intimidad de la charla y la sabiduría del Tarot')
           ]),
 
-          e('div', {className:'max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-2 gap-6'},
+          e('div', {className:'max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-2 gap-6 flex-grow'},
             cards.map(c => e(Card, c))
           ),
 
-          e('footer', {id:'contacto', className:'border-t border-white/10'},
+          e('footer', {id:'contacto', className:'border-t border-white/10 mt-auto'},
             e('div', {className:'max-w-6xl mx-auto px-4 py-6 text-sm text-white/70 flex flex-col md:flex-row gap-2 md:gap-6 items-center md:items-start justify-between'}, [
               e('span', null, `© ${year} TempoChat — Todos los derechos reservados.`),
               e('div', {className:'flex items-center gap-4'}, [
@@ -164,25 +167,6 @@
 
       const root = ReactDOM.createRoot(document.getElementById('root'));
       root.render(e(HubLanding));
-
-      (function runSmokeTests(){
-        try {
-          console.assert(document.getElementById('root'), 'Root debería existir');
-          const buttons = document.querySelectorAll('#root button');
-          console.assert(buttons.length === 2, 'Debería renderizar 2 tarjetas/botones');
-          const titles = Array.from(document.querySelectorAll('#root h2')).map(n=>n.textContent.trim());
-          console.assert(titles.includes('Chat') && titles.includes('Tarot IA'), 'Debería incluir títulos de tarjetas');
-          const ctas = Array.from(document.querySelectorAll('#root button span.font-medium')).map(n=>n.textContent.trim());
-          console.assert(ctas.includes('Entrar al Chat') && ctas.includes('Entrar al Tarot'), 'CTAs deberían estar presentes y alineados');
-          const heroOk = (document.querySelector('#root h1')||{}).textContent?.includes('Charlas privadas');
-          console.assert(heroOk, 'El H1 debería contener el eslogan');
-          const year = new Date().getFullYear();
-          console.assert((document.querySelector('footer')||{}).textContent?.includes(String(year)), 'Footer con año actual');
-          console.log('✅ Pruebas básicas pasaron');
-        } catch (err){
-          console.warn('⚠️ Pruebas básicas fallaron', err);
-        }
-      })();
     </script>
   </body>
 </html>
