@@ -9,8 +9,6 @@
     <!-- React 18 -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-    <!-- Framer Motion -->
-    <script src="https://unpkg.com/framer-motion/dist/framer-motion.umd.js"></script>
     <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   </head>
@@ -18,8 +16,6 @@
     <div id="root"></div>
 
     <script type="text/babel" data-presets="react">
-      const { motion } = window.framerMotion; // ✅ nombre global correcto
-
       function HubLanding() {
         const cards = [
           {
@@ -84,35 +80,22 @@
 
             {/* Hero */}
             <div className="max-w-6xl mx-auto px-4 pt-8 pb-4">
-              <motion.h1
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-                className="text-3xl md:text-5xl font-bold leading-tight"
-              >
+              <h1 className="text-3xl md:text-5xl font-bold leading-tight">
                 Charlas privadas y experiencias místicas.
                 <br className="hidden md:block" />
                 <span className="text-violet-200">Elegí tu camino.</span>
-              </motion.h1>
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.1 }}
-                className="mt-3 text-white/80 max-w-2xl"
-              >
+              </h1>
+              <p className="mt-3 text-white/80 max-w-2xl">
                 Un hub simple para acceder a <strong>TempoChat</strong> o a <strong>Tarot IA</strong>.
-              </motion.p>
+              </p>
             </div>
 
             {/* Cards */}
             <div className="max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-              {cards.map((c, idx) => (
-                <motion.button
+              {cards.map((c) => (
+                <button
                   key={c.id}
                   onClick={c.onClick}
-                  initial={{ opacity: 0, y: 20, scale: 0.98 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ duration: 0.6, delay: 0.15 + idx * 0.05 }}
                   className="group text-left rounded-2xl border border-white/15 bg-white/5 backdrop-blur p-6 md:p-8 hover:bg-white/[0.08] hover:shadow-2xl hover:shadow-violet-800/20 focus:outline-none focus:ring-2 focus:ring-violet-300/40"
                 >
                   <div className="flex items-start gap-4">
@@ -128,7 +111,7 @@
                       <path d="M5 12h12M13 6l6 6-6 6" />
                     </svg>
                   </div>
-                </motion.button>
+                </button>
               ))}
             </div>
 
