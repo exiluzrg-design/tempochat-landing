@@ -1,11 +1,16 @@
 {
   "builds": [
     { "src": "public/(.*)", "use": "@vercel/static" },
+
     { "src": "index.html", "use": "@vercel/static" },
     { "src": "tempochat.html", "use": "@vercel/static" },
-    { "src": "tarot.html", "use": "@vercel/static" }
+    { "src": "tarot.html", "use": "@vercel/static" },
+
+    { "src": "api/**/*.js", "use": "@vercel/node" }   // ← vuelve a habilitar /api/*
   ],
   "routes": [
+    { "src": "/api/(.*)", "dest": "/api/$1.js" },     // ← prioridad para API
+
     { "handle": "filesystem" },
 
     { "src": "/tempochat", "dest": "/tempochat.html" },
