@@ -15,61 +15,41 @@
     <!-- React 18 (UMD) -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-    <style>
-      /* Alturas estables en móvil (evita saltos por barra de direcciones) */
+    <style id="hub-styles">
       :root { --vh: 1vh; }
       html, body, #root { height: 100%; margin: 0; padding: 0; }
-      body { display: flex; flex-direction: column; overscroll-behavior: none; }
-
-      /* Forzamos contenedor principal a altura exacta del viewport */
+      body { display: flex; flex-direction: column; overscroll-behavior: none; background: radial-gradient(1200px 800px at 50% 10%, #5b3ef1 0%, #2b186e 40%, #0f0830 100%); }
       .h-mobile-full { height: calc(var(--vh) * 100); }
-      @supports (height: 100svh) {
-        .h-mobile-full { height: 100svh; }
-      }
-      @supports (height: 100dvh) {
-        .h-mobile-full { height: 100dvh; }
-      }
+      @supports (height: 100svh) { .h-mobile-full { height: 100svh; } }
+      @supports (height: 100dvh) { .h-mobile-full { height: 100dvh; } }
 
-      /* ====== Efecto: brillo diagonal (solo desktop) ====== */
       .btn-animated { position: relative; overflow: hidden; }
       .btn-animated::before {
         content: ""; position: absolute; top: 0; left: -200%; width: 200%; height: 100%;
         background: linear-gradient(120deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 50%, rgba(255,255,255,0.08) 100%);
         transform: skewX(-20deg);
       }
-      /* Animación SOLO en equipos con hover real (desktop/laptop) */
-      @media (hover: hover) and (pointer: fine) {
-        .btn-animated:hover::before { animation: sheen 3s linear infinite; }
-      }
-      /* Sin efecto en mobile/touch */
-      @media (hover: none), (pointer: coarse) {
-        .btn-animated::before { display: none !important; }
-      }
+      @media (hover: hover) and (pointer: fine) { .btn-animated:hover::before { animation: sheen 3s linear infinite; } }
+      @media (hover: none), (pointer: coarse) { .btn-animated::before { display: none !important; } }
       @keyframes sheen { 0% { left: -200%; } 100% { left: 200%; } }
 
-      /* Alineación uniforme para CTAs */
       .cta-row { min-height: 3rem; display: flex; align-items: center; }
       .cta-tarot { margin-top: 1.8rem !important; }
-
-      /* Centrado vertical del bloque (hero + tarjetas) en pantallas bajas */
-      @media (max-height: 700px) {
-        .short-mt-auto { margin-top: auto !important; }
-        .short-mb-auto { margin-bottom: auto !important; }
-      }
     </style>
   </head>
   <body class="h-mobile-full">
-    <div id="root" class="flex flex-col h-mobile-full"></div>
+    <div id="root" class="flex flex-col h-mobile-full">
+      <noscript>
+        <div style="color:#fff;padding:16px;max-width:640px;margin:0 auto;text-align:center">
+          Esta página requiere JavaScript para funcionar.
+        </div>
+      </noscript>
+    </div>
 
     <script>
-      // Fix de viewport en móviles: calcular 1 sola vez (y al rotar) para evitar saltos al hacer scroll
       (function(){
-        const setVH = () => {
-          const vh = window.innerHeight * 0.01;
-          document.documentElement.style.setProperty('--vh', `${vh}px`);
-        };
+        const setVH = () => { document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`); };
         setVH();
-        // No escuchar 'resize' (provoca “respiración” en móvil)
         window.addEventListener('orientationchange', setVH);
       })();
 
@@ -77,18 +57,6 @@
 
       function ChatIcon(){
         return e('svg', {viewBox:'0 0 64 64', className:'w-12 h-12 md:w-14 md:h-14', 'aria-hidden':true}, [
-          e('defs', null,
-            e('linearGradient', {id:'gc', x1:'0', x2:'1'}, [
-              e('stop', {offset:'0', stopColor:'#7c5cff'}),
-              e('stop', {offset:'1', stopColor:'#4b2dbf'})
-            ])
-          ),
-          e('path', {d:'M10 12h44a6 6 0 0 1 6 6v20a6 6 0 0 1-6 6H28l-10 8-2-8H10a6 6 0 0 1-6-6V18a6 6 0 0 1 6-6z', fill:'url(#gc)'}),
-          e('circle', {cx:22, cy:28, r:3, fill:'#fff'}),
-          e('circle', {cx:32, cy:28, r:3, fill:'#fff'}),
-          e('circle', {cx:42, cy:28, r:3, fill:'#fff'})
-        ]);
-      }, [
           e('defs', null,
             e('linearGradient', {id:'gc', x1:'0', x2:'1'}, [
               e('stop', {offset:'0', stopColor:'#7c5cff'}),
@@ -113,14 +81,6 @@
           lines.push(e('line', {key:i, x1, y1, x2, y2}));
         }
         return e('svg', {viewBox:'0 0 64 64', className:'w-12 h-12 md:w-14 md:h-14', 'aria-hidden':true},
-          e('g', {fill:'none', stroke:'#e7c372', strokeWidth:2, strokeLinecap:'round'}, [
-            e('path', {d:'M40 10a20 20 0 1 1-8 44 16 20 0 1 0 8-44z'}),
-            ...lines
-          ])
-        );
-      }));
-        }
-        return e('svg', {viewBox:'0 0 64 64', className:'w-14 h-14', 'aria-hidden':true},
           e('g', {fill:'none', stroke:'#e7c372', strokeWidth:2, strokeLinecap:'round'}, [
             e('path', {d:'M40 10a20 20 0 1 1-8 44 16 20 0 1 0 8-44z'}),
             ...lines
@@ -160,24 +120,8 @@
       function HubLanding(){
         const year = new Date().getFullYear();
         const cards = [
-          {
-            id:'tempochat',
-            title:'Chat',
-            blurb:'Un espacio seguro de 10 minutos para soltar lo que llevás dentro. Privacidad real y respuestas que te ordenan.',
-            cta:'Entrar al Chat',
-            onClick: () => { window.location.href = '/tempochat'; },
-            icon: e(ChatIcon),
-            effectClass: 'btn-animated'
-          },
-          {
-            id:'tarot',
-            title:'Tarot IA',
-            blurb:'Viví la intensidad de una tirada mística: cartas reveladoras y una guía inspirada para tu viaje interior.',
-            cta:'Entrar al Tarot',
-            onClick: () => { window.location.href = '/tarot'; },
-            icon: e(TarotIcon),
-            effectClass: 'btn-animated'
-          }
+          { id:'tempochat', title:'Chat', blurb:'Un espacio seguro de 10 minutos para soltar lo que llevás dentro. Privacidad real y respuestas que te ordenan.', cta:'Entrar al Chat', onClick: () => { window.location.href = '/tempochat'; }, icon: e(ChatIcon), effectClass: 'btn-animated' },
+          { id:'tarot', title:'Tarot IA', blurb:'Viví la intensidad de una tirada mística: cartas reveladoras y una guía inspirada para tu viaje interior.', cta:'Entrar al Tarot', onClick: () => { window.location.href = '/tarot'; }, icon: e(TarotIcon), effectClass: 'btn-animated' }
         ];
 
         return e('div', {className:'flex flex-col h-mobile-full w-full text-white overflow-hidden relative', style:{background:'radial-gradient(1200px 800px at 50% 10%, #5b3ef1 0%, #2b186e 40%, #0f0830 100%)'}}, [
@@ -194,7 +138,7 @@
             e('a', {href:'#contacto', className:'text-sm opacity-80 hover:opacity-100'}, 'Contacto')
           ]),
 
-          e('div', {className:'max-w-6xl mx-auto px-4 pt-6 pb-3 short-mt-auto flex flex-col items-center text-center md:items-start md:text-left'}, , [
+          e('div', {className:'max-w-6xl mx-auto px-4 pt-6 pb-3 short-mt-auto flex flex-col items-center text-center md:items-start md:text-left'}, [
             e('h1', {className:'text-2xl sm:text-3xl md:text-5xl font-bold leading-tight'}, [
               'Charlas privadas y experiencias místicas.',
               e('br', {className:'hidden md:block'}),
@@ -203,7 +147,7 @@
             e('p', {className:'mt-3 text-white/80 max-w-2xl'}, 'Un puente entre la intimidad de la charla y la sabiduría del Tarot')
           ]),
 
-          e('div', {className:'max-w-6xl mx-auto px-4 py-6 md:py-8 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 short-mb-auto place-items-center md:place-items-stretch'}, ,
+          e('div', {className:'max-w-6xl mx-auto px-4 py-6 md:py-8 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 short-mb-auto place-items-center md:place-items-stretch'},
             cards.map(c => e(Card, c))
           ),
 
@@ -220,8 +164,24 @@
         ]);
       }
 
-      const root = ReactDOM.createRoot(document.getElementById('root'));
-      root.render(e(HubLanding));
+      (function(){
+        try {
+          if (!window.React || !window.ReactDOM) throw new Error('React/ReactDOM no disponibles');
+          const mount = document.getElementById('root');
+          if (!mount) throw new Error('Elemento #root no encontrado');
+          const root = ReactDOM.createRoot(mount);
+          root.render(e(HubLanding));
+        } catch (err) {
+          console.error('Error inicializando la app:', err);
+          const mount = document.getElementById('root');
+          if (mount) {
+            mount.innerHTML = '<div style="color:#fff;max-width:720px;margin:40px auto;padding:16px;border:1px solid rgba(255,255,255,.2);border-radius:12px;background:rgba(255,255,255,.05);font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif">'+
+              '<h2 style="margin:0 0 8px 0;font-size:20px">No pudimos cargar la interfaz</h2>'+
+              '<div style="opacity:.8;font-size:14px">Revisá la consola del navegador para ver el error técnico.</div>'+
+              '</div>';
+          }
+        }
+      })();
     </script>
   </body>
 </html>
