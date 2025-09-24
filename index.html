@@ -29,7 +29,7 @@
       margin-bottom: 16px;
     }
 
-    /* ===== Beneficios centrados ===== */
+    /* ===== Beneficios ===== */
     .benefits {
       display:flex;
       justify-content:center;
@@ -38,7 +38,6 @@
       flex-wrap:wrap;
       margin-bottom:16px;
       text-align:center;
-      padding: 4px 0;
     }
     .benefit {
       background: linear-gradient(135deg,#1e1e20,#2c2c30);
@@ -68,8 +67,8 @@
       box-shadow: 0 0 20px rgba(34,197,94,.25);
       display:flex;
       flex-direction:column;
-      height: calc(100dvh - 210px); /* espacio razonable para header+beneficios en mobile */
-      max-height: 70vh; /* en desktop no ocupar todo */
+      height: calc(100dvh - 210px);
+      max-height: 70vh;
     }
 
     #chat { 
@@ -79,11 +78,9 @@
       gap:10px; 
       overflow-y:auto; 
       padding-right:6px;
-
-      /* clave: deja margen para que la burbuja no quede debajo del input sticky */
       scroll-behavior: smooth;
-      scroll-padding-bottom: 96px; /* se actualiza por JS también */
-      padding-bottom: 96px;        /* se actualiza por JS también */
+      scroll-padding-bottom: 96px;
+      padding-bottom: 96px;
     }
 
     .msg { 
@@ -93,9 +90,7 @@
       white-space: pre-wrap; 
       font-size:15px;
       line-height:1.4;
-
-      /* por si el navegador ignora scroll-padding en el contenedor */
-      scroll-margin-bottom: 96px; /* se ve reforzado por JS */
+      scroll-margin-bottom: 96px;
     }
     .user { 
       align-self:flex-end; 
@@ -111,7 +106,6 @@
       box-shadow:0 0 12px rgba(168,85,247,.35);
     }
 
-    /* Barra de envío sticky dentro de la card */
     .row { 
       display:flex; 
       gap:8px; 
@@ -145,8 +139,23 @@
     }
     button:hover { transform:scale(1.05); }
 
-    @media (min-width: 801px) {
-      .card { height: 65vh; }
+    @media (max-width: 600px) {
+      .wrap { padding: 16px; }
+      .benefit {
+        font-size:12px;
+        padding:6px 10px;
+      }
+      .benefit span { font-size:14px; }
+      .benefits {
+        gap:8px;
+      }
+      /* 2x2 grid compacto en mobile */
+      .benefits {
+        display:grid;
+        grid-template-columns: 1fr 1fr;
+        justify-items:center;
+      }
+      .card { height: calc(100dvh - 170px); }
     }
   </style>
 </head>
@@ -154,7 +163,7 @@
   <div class="wrap">
     <h1>TempoChat</h1>
 
-    <!-- Beneficios centrados -->
+    <!-- Beneficios compactos -->
     <div class="benefits">
       <div class="benefit"><span>⚡</span> Sesiones 10 min</div>
       <div class="benefit"><span>🔒</span> 100% anónimo</div>
@@ -180,14 +189,12 @@
     const composer  = document.getElementById('composer');
 
     let sessionId = localStorage.getItem('tempochat_session') || null;
-    const context = []; // historial corto que viaja al backend
+    const context = []; 
 
-    // --- Ajuste dinámico para que ninguna burbuja quede "cortada" detrás del sticky ---
     function applyFooterInset() {
-      const footerH = (composer?.offsetHeight || 0) + 16; // extra colchón
+      const footerH = (composer?.offsetHeight || 0) + 16;
       chatBox.style.scrollPaddingBottom = footerH + 'px';
       chatBox.style.paddingBottom = footerH + 'px';
-      // Para navegadores que usan scroll-margin en los hijos:
       document.querySelectorAll('.msg').forEach(el => {
         el.style.scrollMarginBottom = footerH + 'px';
       });
@@ -196,10 +203,8 @@
     const raf = (fn) => requestAnimationFrame(() => requestAnimationFrame(fn));
 
     function smoothReveal(el) {
-      // Espera a que el layout se estabilice y luego scrollea
       raf(() => {
-        el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
-        // Fallback extra por si el teclado mueve el viewport luego
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         setTimeout(() => {
           chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
         }, 80);
@@ -211,10 +216,8 @@
       div.className = 'msg ' + role;
       div.textContent = text;
       chatBox.appendChild(div);
-
       applyFooterInset();
       smoothReveal(div);
-
       context.push({ role, content: text });
       if (context.length > 12) context.splice(0, context.length - 12);
     }
@@ -250,19 +253,14 @@
       }
     }
 
-    // Eventos
     sendBtn?.addEventListener('click', handleSend);
     input?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') { e.preventDefault(); handleSend(); }
     });
 
-    // Recalcular al cargar, al redimensionar y al abrir/cerrar teclado
     window.addEventListener('load', applyFooterInset);
     window.addEventListener('resize', applyFooterInset);
-    input.addEventListener('focus', applyFooterInset);
-    input.addEventListener('blur', applyFooterInset);
 
-    // Mensaje inicial
     add('assistant', '🌌 Bienvenido a TempoChat. ¿Qué tenés en la cabeza hoy?');
   </script>
 </body>
