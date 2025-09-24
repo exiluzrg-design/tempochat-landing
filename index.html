@@ -31,7 +31,6 @@
 
     ::selection { background: rgba(124,198,255,.25); }
 
-    /* Prevent iOS rubber band and layout jumps */
     html { overscroll-behavior-y: none; }
 
     /* ===== App shell ===== */
@@ -77,9 +76,7 @@
     }
     .dot { width: 8px; height: 8px; border-radius: 50%; background: #7cc6ff; box-shadow: 0 0 10px rgba(124,198,255,.7); }
 
-    @media (max-width: 860px) {
-      .benefits { grid-template-columns: repeat(2, minmax(0,1fr)); }
-    }
+    @media (max-width: 860px) { .benefits { grid-template-columns: repeat(2, minmax(0,1fr)); } }
 
     /* ===== Messages area ===== */
     .messages {
@@ -91,7 +88,9 @@
       padding: 18px 16px 12px;
       max-width: 980px; margin: 0 auto; width: 100%;
       overflow-y: auto; overscroll-behavior: contain;
-      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch; /* iOS smooth */
+      overflow-anchor: none; /* evita saltos al insertar nodos */
+      scroll-behavior: auto; /* controlado desde JS */
     }
 
     .bubble {
@@ -105,21 +104,10 @@
       position: relative;
       word-wrap: break-word; word-break: break-word;
     }
-
     .bubble .meta { margin-top: 6px; font-size: 12px; color: var(--muted); }
 
-    /* Mensajes de TempoChat (asistente) a la izquierda por defecto */
-    .bubble.bot {
-      background: linear-gradient(180deg, #16161c, #121217);
-      border: 1px solid rgba(124,198,255,.18);
-    }
-
-    /* Mensajes del usuario: se apilan igual, pero se empujan a la derecha sin romper el flujo */
-    .bubble.me {
-      margin-left: auto; /* << clave para no romper la pila */
-      background: linear-gradient(180deg, #1b2030, #0f1422);
-      border: 1px solid rgba(91,140,255,.28);
-    }
+    .bubble.bot { background: linear-gradient(180deg, #16161c, #121217); border: 1px solid rgba(124,198,255,.18); }
+    .bubble.me  { margin-left: auto; background: linear-gradient(180deg, #1b2030, #0f1422); border: 1px solid rgba(91,140,255,.28); }
 
     /* ===== Composer ===== */
     .composer-wrap {
@@ -130,12 +118,7 @@
       border-top: 1px solid rgba(255,255,255,.06);
       padding-bottom: max(10px, env(safe-area-inset-bottom));
     }
-
-    form.composer {
-      max-width: 980px; margin: 0 auto; width: 100%;
-      display: grid; grid-template-columns: 1fr auto; gap: 10px;
-      padding: 10px 12px;
-    }
+    form.composer { max-width: 980px; margin: 0 auto; width: 100%; display: grid; grid-template-columns: 1fr auto; gap: 10px; padding: 10px 12px; }
 
     textarea#input {
       resize: none; min-height: 44px; max-height: 160px;
@@ -147,26 +130,15 @@
       box-shadow: inset 0 0 0 1px rgba(124,198,255,.08);
     }
 
-    button#send {
-      padding: 0 16px; border-radius: 14px; border: 1px solid rgba(255,255,255,.1);
-      background: linear-gradient(180deg, #1a1a22, #12121a);
-      color: #eaeaf1; font-weight: 600; letter-spacing: .2px; cursor: pointer;
-      box-shadow: 0 6px 22px rgba(0,0,0,.25);
-      transition: transform .06s ease, box-shadow .2s ease, background .2s ease;
-    }
+    button#send { padding: 0 16px; border-radius: 14px; border: 1px solid rgba(255,255,255,.1); background: linear-gradient(180deg, #1a1a22, #12121a); color: #eaeaf1; font-weight: 600; letter-spacing: .2px; cursor: pointer; box-shadow: 0 6px 22px rgba(0,0,0,.25); transition: transform .06s ease, box-shadow .2s ease, background .2s ease; }
     button#send:active { transform: translateY(1px); box-shadow: 0 3px 14px rgba(0,0,0,.28); }
     button[disabled] { opacity: .6; cursor: not-allowed; }
 
-    /* ===== Small helpers ===== */
     .hidden { display: none !important; }
     .fade-in { animation: fade .18s ease-out; }
     @keyframes fade { from { opacity: 0; transform: translateY(4px);} to { opacity:1; transform:none;} }
 
-    @media (max-width: 768px) {
-      textarea#input::placeholder {
-        content: "Escribí tu mensaje…";
-      }
-    }
+    .sentinel{ height:1px; width:100%; }
   </style>
 </head>
 <body>
@@ -180,7 +152,6 @@
             <div class="subtitle">Charlas privadas en 10 minutos — sin registro</div>
           </div>
         </div>
-        <!-- 5 beneficios visibles -->
         <div class="benefits" aria-label="beneficios tempochat">
           <div class="chip"><span class="dot"></span>Privado y anónimo</div>
           <div class="chip"><span class="dot"></span>Disponible 24/7</div>
@@ -196,18 +167,19 @@
         Hola, ¿cómo andás? A veces la vida nos pone un poco desorientados. Contame, ¿qué te está pasando? Estoy acá para escucharte.
         <div class="meta">TempoChat</div>
       </div>
+      <div class="sentinel" id="sentinel" aria-hidden="true"></div>
     </main>
 
     <div class="composer-wrap">
       <form id="composer" class="composer" autocomplete="off">
-        <textarea id="input" placeholder="Escribí tu mensaje… (Shift + Enter para salto de línea)" aria-label="Escribí tu mensaje"></textarea>
+        <textarea id="input" placeholder="Escribí tu mensaje…" aria-label="Escribí tu mensaje"></textarea>
         <button id="send" type="submit">Enviar</button>
       </form>
     </div>
   </div>
 
   <script>
-    // ===== Mobile viewport fixes (iOS/Android) =====
+    // ===== Viewport fix =====
     (function viewportFix() {
       const setVH = () => {
         const dvh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
@@ -218,15 +190,53 @@
       if (window.visualViewport) visualViewport.addEventListener('resize', setVH);
     })();
 
-    // ===== Simple chat client =====
+    // ===== Helpers =====
     const $ = (sel, el=document) => el.querySelector(sel);
     const messagesEl = $('#messages');
     const inputEl = $('#input');
     const sendBtn = $('#send');
+    const sentinel = $('#sentinel');
 
-    // Persistimos un sessionId si el backend lo usa para la memoria de sesión
-    let sessionId = localStorage.getItem('tempochat_session') || '';
+    // ===== Placeholder dinámico (mobile vs desktop) =====
+    function updatePlaceholder(){
+      const w = (window.visualViewport ? visualViewport.width : window.innerWidth) || 1024;
+      if (w <= 768) inputEl.setAttribute('placeholder', 'Escribí tu mensaje…');
+      else inputEl.setAttribute('placeholder', 'Escribí tu mensaje… (Shift + Enter para salto de línea)');
+    }
+    updatePlaceholder();
+    window.addEventListener('resize', updatePlaceholder);
+    if (window.visualViewport) visualViewport.addEventListener('resize', updatePlaceholder);
 
+    // ===== Session (memoria por sesión) =====
+    const LS_KEY = 'tempochat_session';
+    function ensureSessionId() {
+      let sid = localStorage.getItem(LS_KEY);
+      if (!sid) {
+        sid = (crypto && crypto.randomUUID) ? crypto.randomUUID() : 'sid_' + Math.random().toString(36).slice(2);
+        localStorage.setItem(LS_KEY, sid);
+      }
+      return sid;
+    }
+    let sessionId = ensureSessionId();
+
+    // ===== AutoScroll manager =====
+    let autoScroll = true;
+    const bottomThreshold = 120; // px
+
+    function isNearBottom(){
+      return (messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight) <= bottomThreshold;
+    }
+    function scrollToBottom(smooth=true){
+      try { sentinel.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'end' }); }
+      catch { messagesEl.scrollTo({ top: messagesEl.scrollHeight, behavior: smooth ? 'smooth' : 'auto' }); }
+    }
+    function bumpScroll(){ if (autoScroll) scrollToBottom(true); }
+
+    messagesEl.addEventListener('scroll', () => { autoScroll = isNearBottom(); });
+    const ro = new ResizeObserver(() => bumpScroll());
+    ro.observe(messagesEl);
+
+    // ===== UI helpers =====
     function appendMessage(role, text) {
       const div = document.createElement('div');
       div.className = `bubble ${role === 'user' ? 'me' : 'bot'} fade-in`;
@@ -235,23 +245,23 @@
       meta.className = 'meta';
       meta.textContent = role === 'user' ? 'Vos' : 'TempoChat';
       div.appendChild(meta);
-      messagesEl.appendChild(div);
-      // Scroll al final sin saltos
-      messagesEl.scrollTop = messagesEl.scrollHeight + 64;
+      messagesEl.insertBefore(div, sentinel);
+      requestAnimationFrame(bumpScroll);
     }
 
-    function setSending(sending) {
-      sendBtn.disabled = sending;
-      inputEl.disabled = sending;
-    }
+    function setSending(sending) { sendBtn.disabled = sending; inputEl.disabled = sending; }
 
+    // ===== Network =====
     async function sendMessage(text) {
       setSending(true);
       appendMessage('user', text);
       try {
         const res = await fetch('/api/chat', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Session-Id': sessionId // por compatibilidad con backends que leen header
+          },
           body: JSON.stringify({ text, sessionId })
         });
 
@@ -263,11 +273,10 @@
         }
 
         const data = await res.json();
-        // Backends posibles: {assistant:"..."} ó {message:"..."} ó {reply:"..."}
         const reply = data.assistant || data.message || data.reply || '…';
-        if (data.sessionId) {
+        if (data.sessionId) { // si el backend devuelve un id, lo respetamos y persistimos
           sessionId = data.sessionId;
-          localStorage.setItem('tempochat_session', sessionId);
+          localStorage.setItem(LS_KEY, sessionId);
         }
         appendMessage('assistant', reply);
       } catch (e) {
@@ -278,6 +287,7 @@
       }
     }
 
+    // ===== Events =====
     $('#composer').addEventListener('submit', (e) => {
       e.preventDefault();
       const text = inputEl.value.trim();
@@ -286,7 +296,6 @@
       sendMessage(text);
     });
 
-    // Enter para enviar, Shift+Enter para salto de línea
     inputEl.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -294,13 +303,10 @@
       }
     });
 
-    // Evitar movimientos raros: al enfocar el input, llevar el scroll al final
-    inputEl.addEventListener('focus', () => {
-      setTimeout(() => { messagesEl.scrollTop = messagesEl.scrollHeight + 64; }, 50);
-    });
+    inputEl.addEventListener('focus', () => { setTimeout(() => bumpScroll(), 50); });
 
-    // API: opción para limpiar memoria local al cerrar manualmente
-    window.clearTempoChatSession = () => { localStorage.removeItem('tempochat_session'); };
+    // util para borrar manualmente la sesión local
+    window.clearTempoChatSession = () => { localStorage.removeItem(LS_KEY); };
   </script>
 </body>
 </html>
