@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TempoChat — Hub</title>
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React 18 -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  </head>
+  <body class="min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel" data-presets="react">
+      function HubLanding() {
+        const cards = [
+          {
+            id: "tempochat",
+            title: "TempoChat",
+            blurb: "Charlas privadas de 10 minutos, sin registros, con privacidad real.",
+            cta: "Entrar a TempoChat",
+            onClick: () => (window.location.href = "/tempochat"),
+            icon: (
+              <svg viewBox="0 0 64 64" className="w-14 h-14" aria-hidden>
+                <defs>
+                  <linearGradient id="gc" x1="0" x2="1">
+                    <stop offset="0" stopColor="#7c5cff" />
+                    <stop offset="1" stopColor="#4b2dbf" />
+                  </linearGradient>
+                </defs>
+                <path d="M10 12h44a6 6 0 0 1 6 6v20a6 6 0 0 1-6 6H28l-10 8-2-8H10a6 6 0 0 1-6-6V18a6 6 0 0 1 6-6z" fill="url(#gc)"/>
+                <circle cx="22" cy="28" r="3" fill="#fff"/>
+                <circle cx="32" cy="28" r="3" fill="#fff"/>
+                <circle cx="42" cy="28" r="3" fill="#fff"/>
+              </svg>
+            ),
+          },
+          {
+            id: "tarot",
+            title: "Tarot IA",
+            blurb: "Tirada interactiva, mística y guiada por IA. Elegí 22 cartas y viví la experiencia.",
+            cta: "Entrar al Tarot",
+            onClick: () => (window.location.href = "/tarot"),
+            icon: (
+              <svg viewBox="0 0 64 64" className="w-14 h-14" aria-hidden>
+                <g fill="none" stroke="#e7c372" strokeWidth="2" strokeLinecap="round">
+                  <path d="M40 10a20 20 0 1 1-8 44 16 20 0 1 0 8-44z" />
+                  {[...Array(16)].map((_, i) => {
+                    const a = (i * 22.5 * Math.PI) / 180;
+                    const x1 = 32 + 20 * Math.cos(a);
+                    const y1 = 32 + 20 * Math.sin(a);
+                    const x2 = 32 + 26 * Math.cos(a);
+                    const y2 = 32 + 26 * Math.sin(a);
+                    return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} />;
+                  })}
+                </g>
+              </svg>
+            ),
+          },
+        ];
+
+        return (
+          <div className="min-h-screen w-full text-white overflow-hidden"
+               style={{ background: "radial-gradient(1200px 800px at 50% 10%, #5b3ef1 0%, #2b186e 40%, #0f0830 100%)" }}>
+            
+            {/* Navbar */}
+            <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-white/10 border border-white/20 grid place-items-center">
+                  <div className="w-4 h-4 rounded-full bg-gradient-to-br from-violet-400 to-indigo-600" />
+                </div>
+                <span className="font-semibold tracking-wide">TempoChat</span>
+              </div>
+              <a href="#contacto" className="text-sm opacity-80 hover:opacity-100">Contacto</a>
+            </div>
+
+            {/* Hero */}
+            <div className="max-w-6xl mx-auto px-4 pt-8 pb-4">
+              <h1 className="text-3xl md:text-5xl font-bold leading-tight">
+                Charlas privadas y experiencias místicas.
+                <br className="hidden md:block" />
+                <span className="text-violet-200">Elegí tu camino.</span>
+              </h1>
+              <p className="mt-3 text-white/80 max-w-2xl">
+                Un hub simple para acceder a <strong>TempoChat</strong> o a <strong>Tarot IA</strong>.
+              </p>
+            </div>
+
+            {/* Cards */}
+            <div className="max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+              {cards.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={c.onClick}
+                  className="group text-left rounded-2xl border border-white/15 bg-white/5 backdrop-blur p-6 md:p-8 hover:bg-white/[0.08] hover:shadow-2xl hover:shadow-violet-800/20 focus:outline-none focus:ring-2 focus:ring-violet-300/40"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="shrink-0">{c.icon}</div>
+                    <div>
+                      <h2 className="text-xl md:text-2xl font-semibold mb-1">{c.title}</h2>
+                      <p className="text-white/80 text-sm md:text-base">{c.blurb}</p>
+                    </div>
+                  </div>
+                  <div className="mt-6 flex items-center gap-2 text-violet-200">
+                    <span className="font-medium">{c.cta}</span>
+                    <svg viewBox="0 0 24 24" className="w-5 h-5 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" strokeWidth="1.8">
+                      <path d="M5 12h12M13 6l6 6-6 6" />
+                    </svg>
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            {/* Footer */}
+            <footer id="contacto" className="border-t border-white/10">
+              <div className="max-w-6xl mx-auto px-4 py-6 text-sm text-white/70 flex flex-col md:flex-row gap-2 md:gap-6 items-center md:items-start justify-between">
+                <span>© {new Date().getFullYear()} TempoChat — Todos los derechos reservados.</span>
+                <div className="flex items-center gap-4">
+                  <a href="#" className="hover:text-white">Términos</a>
+                  <a href="#" className="hover:text-white">Privacidad</a>
+                  <a href="mailto:hola@tempochat.com" className="hover:text-white">Contacto</a>
+                </div>
+              </div>
+            </footer>
+          </div>
+        );
+      }
+
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(<HubLanding />);
+    </script>
+  </body>
+</html>
