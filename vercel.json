@@ -3,13 +3,14 @@
     { "src": "public/(.*)", "use": "@vercel/static" },
     { "src": "index.html", "use": "@vercel/static" },
     { "src": "tempochat.html", "use": "@vercel/static" },
-    { "src": "tarot.html", "use": "@vercel/static" },
-    { "src": "card-back.png", "use": "@vercel/static" }   // ← NUEVO
+    { "src": "tarot.html", "use": "@vercel/static" }
   ],
   "routes": [
     { "handle": "filesystem" },
+
     { "src": "/tempochat", "dest": "/tempochat.html" },
     { "src": "/tarot", "dest": "/tarot.html" },
-    { "src": "/(.*)", "dest": "/index.html" }
+
+    { "src": "/", "dest": "/index.html" }
   ]
 }
