@@ -1,9 +1,6 @@
 {
   "builds": [
     { "src": "public/(.*)", "use": "@vercel/static" },
-    { "src": "index.html", "use": "@vercel/static" },
-    { "src": "tempochat.html", "use": "@vercel/static" },
-    { "src": "tarot.html", "use": "@vercel/static" },
     { "src": "api/**/*.js", "use": "@vercel/node" }
   ],
   "routes": [
