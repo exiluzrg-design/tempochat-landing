@@ -12,7 +12,7 @@
       background: radial-gradient(circle at top, #0b0b0c 0%, #050507 100%);
       color:#e8e8ec;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      overflow:hidden;
+      /* antes tenía overflow:hidden; lo sacamos para que mobile pueda scrollear */
     }
 
     .wrap { 
@@ -30,15 +30,17 @@
       margin-bottom: 16px;
     }
 
-    /* ===== Barra de beneficios ===== */
+    /* ===== Barra de beneficios centrada ===== */
     .benefits {
       display:flex;
       justify-content:center;
+      align-items:center;
       gap:12px;
       flex-wrap:wrap;
       margin-bottom:16px;
+      text-align:center;
+      padding: 4px 0;
     }
-
     .benefit {
       background: linear-gradient(135deg,#1e1e20,#2c2c30);
       border:1px solid #2f2f35;
@@ -52,11 +54,7 @@
       box-shadow:0 0 12px rgba(59,130,246,.3);
       transition: transform .2s, box-shadow .2s;
     }
-
-    .benefit span {
-      font-size:16px;
-    }
-
+    .benefit span { font-size:16px; }
     .benefit:hover {
       transform: translateY(-2px) scale(1.05);
       box-shadow:0 0 16px rgba(168,85,247,.45);
@@ -71,7 +69,8 @@
       box-shadow: 0 0 20px rgba(34,197,94,.25);
       display:flex;
       flex-direction:column;
-      height: 65vh;
+      height: min(65vh, 70dvh); /* mejor en mobile con d vh */
+      /* sin overflow para que funcione sticky del input */
     }
 
     #chat { 
@@ -92,14 +91,12 @@
       font-size:15px;
       line-height:1.4;
     }
-
     .user { 
       align-self:flex-end; 
       background: linear-gradient(135deg,#1d4ed8,#3b82f6); 
       color:#f0f6ff; 
       box-shadow:0 0 12px rgba(59,130,246,.5);
     }
-
     .assistant { 
       align-self:flex-start; 
       background: linear-gradient(135deg,#242427,#2b2b30); 
@@ -108,10 +105,17 @@
       box-shadow:0 0 12px rgba(168,85,247,.35);
     }
 
+    /* Barra de envío SIEMPRE visible dentro de la card */
     .row { 
       display:flex; 
       gap:8px; 
       margin-top:12px; 
+      position: sticky;
+      bottom: 0;
+      background: linear-gradient(180deg, rgba(20,20,23,0), rgba(20,20,23,0.95));
+      padding-top: 8px;
+      padding-bottom: max(8px, env(safe-area-inset-bottom));
+      backdrop-filter: blur(6px);
     }
 
     input { 
@@ -122,7 +126,6 @@
       background:#0e0e10; 
       color:#e8e8ec; 
     }
-
     button { 
       padding:12px 14px; 
       border-radius:10px; 
@@ -134,8 +137,17 @@
       box-shadow:0 0 10px rgba(34,197,94,.5);
       transition:transform .15s;
     }
-
     button:hover { transform:scale(1.05); }
+
+    /* ===== Ajustes específicos para pantallas chicas ===== */
+    @media (max-width: 600px) {
+      .wrap { padding: 16px; }
+      .benefit { font-size:13px; padding:8px 14px; }
+      .card {
+        /* resta un alto aproximado de header+beneficios para liberar espacio al chat */
+        height: calc(100dvh - 190px);
+      }
+    }
   </style>
 </head>
 <body>
@@ -174,6 +186,7 @@
       div.className = 'msg ' + role;
       div.textContent = text;
       chatBox.appendChild(div);
+      // scroll automático robusto
       div.scrollIntoView({ behavior:"smooth", block:"end" });
       context.push({ role, content: text });
       if (context.length > 12) context.splice(0, context.length - 12);
