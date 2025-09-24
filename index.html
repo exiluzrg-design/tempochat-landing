@@ -31,9 +31,9 @@
       @media (hover: none), (pointer: coarse) { .btn-animated::before { display: none !important; } }
       @keyframes sheen { 0% { left: -200%; } 100% { left: 200%; } }
 
-      .cta-row { min-height: 2rem; display: flex; align-items: center; }
-      @media (min-width: 768px) { .cta-row { min-height: 2.8rem; } }
-      .cta-tarot { margin-top: 1.2rem !important; }
+      .cta-row { min-height: 2.2rem; display: flex; align-items: center; }
+      @media (min-width: 768px) { .cta-row { min-height: 3rem; } }
+      .cta-tarot { margin-top: 1rem !important; }
     </style>
   </head>
   <body class="h-mobile-full">
@@ -54,62 +54,26 @@
 
       const e = React.createElement;
 
-      function ChatIcon(){
-        return e('svg', {viewBox:'0 0 64 64', className:'w-10 h-10 md:w-14 md:h-14', 'aria-hidden':true}, [
-          e('defs', null,
-            e('linearGradient', {id:'gc', x1:'0', x2:'1'}, [
-              e('stop', {offset:'0', stopColor:'#7c5cff'}),
-              e('stop', {offset:'1', stopColor:'#4b2dbf'})
-            ])
-          ),
-          e('path', {d:'M10 12h44a6 6 0 0 1 6 6v20a6 6 0 0 1-6 6H28l-10 8-2-8H10a6 6 0 0 1-6-6V18a6 6 0 0 1 6-6z', fill:'url(#gc)'}),
-          e('circle', {cx:22, cy:28, r:3, fill:'#fff'}),
-          e('circle', {cx:32, cy:28, r:3, fill:'#fff'}),
-          e('circle', {cx:42, cy:28, r:3, fill:'#fff'})
-        ]);
-      }
-
-      function TarotIcon(){
-        const lines = [];
-        for(let i=0;i<16;i++){
-          const a = (i*22.5*Math.PI)/180;
-          const x1 = 32 + 20*Math.cos(a);
-          const y1 = 32 + 20*Math.sin(a);
-          const x2 = 32 + 26*Math.cos(a);
-          const y2 = 32 + 26*Math.sin(a);
-          lines.push(e('line', {key:i, x1, y1, x2, y2}));
-        }
-        return e('svg', {viewBox:'0 0 64 64', className:'w-10 h-10 md:w-14 md:h-14', 'aria-hidden':true},
-          e('g', {fill:'none', stroke:'#e7c372', strokeWidth:2, strokeLinecap:'round'}, [
-            e('path', {d:'M40 10a20 20 0 1 1-8 44 16 20 0 1 0 8-44z'}),
-            ...lines
-          ])
-        );
-      }
-
       function ArrowIcon(){
-        return e('svg', {viewBox:'0 0 24 24', className:'w-4 h-4', fill:'none', stroke:'currentColor', strokeWidth:1.8},
+        return e('svg', {viewBox:'0 0 24 24', className:'w-5 h-5', fill:'none', stroke:'currentColor', strokeWidth:1.8},
           e('path', {d:'M5 12h12M13 6l6 6-6 6'})
         );
       }
 
       function Card(props){
-        const {id, title, blurb, cta, onClick, icon, effectClass} = props;
+        const {id, title, blurb, cta, onClick, effectClass} = props;
         const ctaClass = id === 'tarot' ? 'cta-row cta-tarot' : 'cta-row';
         return e('button', {
             key:id,
             onClick,
-            className:(effectClass || 'btn-animated') + ' group relative w-full max-w-[280px] md:max-w-none text-center md:text-left rounded-2xl border border-white/15 bg-white/5 backdrop-blur p-2 md:p-6 hover:shadow-2xl hover:shadow-violet-800/20 focus:outline-none focus:ring-2 focus:ring-violet-300/40 transition-transform duration-200 hover:-translate-y-0.5'
+            className:(effectClass || 'btn-animated') + ' group relative w-full max-w-[300px] md:max-w-none text-center md:text-left rounded-2xl border border-white/15 bg-white/5 backdrop-blur p-4 md:p-6 hover:shadow-2xl hover:shadow-violet-800/20 focus:outline-none focus:ring-2 focus:ring-violet-300/40 transition-transform duration-200 hover:-translate-y-0.5'
           }, [
-            e('div', {className:'flex flex-col md:flex-row items-center md:items-start gap-2 md:gap-4 relative'}, [
-              e('div', {className:'shrink-0 drop-shadow-lg mb-2 md:mb-0'}, icon),
-              e('div', {className:'flex flex-col justify-between flex-1'}, [
-                e('h2', {className:'text-sm sm:text-base md:text-2xl font-semibold mb-1'}, title),
-                e('p', {className:'text-white/80 text-xs sm:text-sm leading-relaxed'}, blurb),
-                e('div', {className: ctaClass + ' gap-1 text-violet-200 relative z-10 justify-center md:justify-start'}, [
-                  e('span', {className:'font-medium text-sm'}, cta),
-                  e('span', {className:'transition-transform group-hover:translate-x-0.5'}, e(ArrowIcon))
-                ])
+            e('div', {className:'flex flex-col items-center md:items-start gap-3 relative'}, [
+              e('h2', {className:'text-base sm:text-lg md:text-2xl font-semibold'}, title),
+              e('p', {className:'text-white/80 text-sm sm:text-base leading-relaxed'}, blurb),
+              e('div', {className: ctaClass + ' gap-2 text-violet-200 relative z-10 justify-center md:justify-start'}, [
+                e('span', {className:'font-medium text-base sm:text-lg'}, cta),
+                e('span', {className:'transition-transform group-hover:translate-x-0.5'}, e(ArrowIcon))
               ])
             ])
           ]
@@ -119,8 +83,8 @@
       function HubLanding(){
         const year = new Date().getFullYear();
         const cards = [
-          { id:'tempochat', title:'Chat', blurb:'Un espacio seguro de 10 minutos para soltar lo que llevás dentro. Privacidad real y respuestas que te ordenan.', cta:'Entrar al Chat', onClick: () => { window.location.href = '/tempochat'; }, icon: e(ChatIcon), effectClass: 'btn-animated' },
-          { id:'tarot', title:'Tarot IA', blurb:'Viví la intensidad de una tirada mística: cartas reveladoras y una guía inspirada para tu viaje interior.', cta:'Entrar al Tarot', onClick: () => { window.location.href = '/tarot'; }, icon: e(TarotIcon), effectClass: 'btn-animated' }
+          { id:'tempochat', title:'Chat', blurb:'Un espacio seguro de 10 minutos para soltar lo que llevás dentro. Privacidad real y respuestas que te ordenan.', cta:'Entrar al Chat', onClick: () => { window.location.href = '/tempochat'; }, effectClass: 'btn-animated' },
+          { id:'tarot', title:'Tarot IA', blurb:'Viví la intensidad de una tirada mística: cartas reveladoras y una guía inspirada para tu viaje interior.', cta:'Entrar al Tarot', onClick: () => { window.location.href = '/tarot'; }, effectClass: 'btn-animated' }
         ];
 
         return e('div', {className:'flex flex-col h-mobile-full w-full text-white overflow-hidden relative', style:{background:'radial-gradient(1200px 800px at 50% 10%, #5b3ef1 0%, #2b186e 40%, #0f0830 100%)'}}, [
@@ -146,7 +110,7 @@
             e('p', {className:'mt-2 text-white/80 max-w-xl text-sm sm:text-base'}, 'Un puente entre la intimidad de la charla y la sabiduría del Tarot')
           ]),
 
-          e('div', {className:'max-w-6xl mx-auto px-3 py-4 md:py-8 grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-6 place-items-center md:place-items-stretch'},
+          e('div', {className:'max-w-6xl mx-auto px-3 py-4 md:py-8 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 place-items-center md:place-items-stretch'},
             cards.map(c => e(Card, c))
           ),
 
