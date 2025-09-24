@@ -3,6 +3,13 @@
     { "src": "public/(.*)", "use": "@vercel/static" }
   ],
   "routes": [
-    { "handle": "filesystem" }
+    { "handle": "filesystem" },
+
+    { "src": "/$", "dest": "/index.html" },
+    { "src": "/index", "dest": "/index.html" },
+
+    { "src": "/tarot", "dest": "/tarot.html" },
+
+    { "src": "/(.*)", "dest": "/$1" }
   ]
 }
