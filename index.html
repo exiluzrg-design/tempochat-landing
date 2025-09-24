@@ -21,19 +21,30 @@
       html, body, #root { height: auto; min-height: calc(var(--vh) * 100); margin: 0; padding: 0; }
       body { display: flex; flex-direction: column; overscroll-behavior: none; }
       .min-h-mobile { min-height: calc(var(--vh) * 100); }
+
+      /* Preferir svh (view height estable), luego dvh como fallback */
+      @supports (height: 100svh) {
+        html, body, #root, .min-h-mobile { min-height: 100svh; }
+      }
       @supports (height: 100dvh) {
-        /* Navegadores modernos: usar dvh que no cambia con UI */
         html, body, #root, .min-h-mobile { min-height: 100dvh; }
       }
 
-      /* ====== Efecto: brillo diagonal en hover ====== */
+      /* ====== Efecto: brillo diagonal (solo desktop) ====== */
       .btn-animated { position: relative; overflow: hidden; }
       .btn-animated::before {
         content: ""; position: absolute; top: 0; left: -200%; width: 200%; height: 100%;
         background: linear-gradient(120deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 50%, rgba(255,255,255,0.08) 100%);
         transform: skewX(-20deg);
       }
-      .btn-animated:hover::before { animation: sheen 3s linear infinite; }
+      /* Animación SOLO en equipos con hover real (desktop/laptop) */
+      @media (hover: hover) and (pointer: fine) {
+        .btn-animated:hover::before { animation: sheen 3s linear infinite; }
+      }
+      /* Sin efecto en mobile/touch */
+      @media (hover: none), (pointer: coarse) {
+        .btn-animated::before { display: none !important; }
+      }
       @keyframes sheen { 0% { left: -200%; } 100% { left: 200%; } }
 
       /* Alineación uniforme para CTAs */
@@ -51,14 +62,14 @@
     <div id="root" class="flex flex-col min-h-mobile"></div>
 
     <script>
-      // Fix de viewport en móviles (iOS/Android): evita movimiento en eje Y
+      // Fix de viewport en móviles: calcular 1 sola vez (y al rotar) para evitar saltos al hacer scroll
       (function(){
         const setVH = () => {
           const vh = window.innerHeight * 0.01;
           document.documentElement.style.setProperty('--vh', `${vh}px`);
         };
         setVH();
-        window.addEventListener('resize', setVH);
+        // No escuchar 'resize' (provoca “respiración” en móvil)
         window.addEventListener('orientationchange', setVH);
       })();
 
@@ -163,7 +174,7 @@
             e('a', {href:'#contacto', className:'text-sm opacity-80 hover:opacity-100'}, 'Contacto')
           ]),
 
-          <!-- Hero (sube automáticamente en pantallas bajas) -->
+          /* Hero (sube automáticamente en pantallas bajas) */
           e('div', {className:'max-w-6xl mx-auto px-4 pt-8 pb-4 flex-grow short-mt-auto'}, [
             e('h1', {className:'text-3xl md:text-5xl font-bold leading-tight'}, [
               'Charlas privadas y experiencias místicas.',
@@ -173,7 +184,7 @@
             e('p', {className:'mt-3 text-white/80 max-w-2xl'}, 'Un puente entre la intimidad de la charla y la sabiduría del Tarot')
           ]),
 
-          <!-- Tarjetas (bajan automáticamente en pantallas bajas) -->
+          /* Tarjetas (bajan automáticamente en pantallas bajas) */
           e('div', {className:'max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-2 gap-6 flex-grow short-mb-auto'},
             cards.map(c => e(Card, c))
           ),
