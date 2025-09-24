@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Tarot IA — U con Light Sweep (mobile centrado)</title>
+  <title>Tarot IA — U con Light Sweep (responsive por breakpoint)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
@@ -31,6 +31,7 @@
       overflow:hidden;
       background: transparent;
     }
+
     :root{ --card-w:128px; --card-h:204px; }
     .card{
       position:absolute; width:var(--card-w); height:var(--card-h);
@@ -45,7 +46,8 @@
       will-change: transform, opacity;
     }
     .card.show{ opacity:1; }
-    /* ÚNICO efecto: light sweep */
+
+    /* Único efecto: light sweep */
     .card::after{
       content:""; position:absolute; inset:0;
       background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.28) 50%, transparent 65%);
@@ -59,10 +61,12 @@
       38%  { transform: translateX(120%); }
       100% { transform: translateX(120%); }
     }
+
     .card svg{ position:absolute; inset:0; width:100%; height:100%; display:block; }
 
+    /* Breakpoints: sólo cambian tamaños de carta (layout es JS) */
     @media (max-width:920px){ :root{ --card-w:110px; --card-h:192px; } }
-    @media (max-width:640px){ :root{ --card-w:100px;  --card-h:176px; } } /* mobile: un toque más grandes */
+    @media (max-width:640px){ :root{ --card-w:104px;  --card-h:182px; } }
   </style>
 </head>
 <body>
@@ -72,7 +76,6 @@
 
   <script type="text/babel" data-presets="react">
     const { useEffect, useMemo, useRef, useState } = React;
-    const CARD_TOTAL = 22;
 
     /* Dorso con luna */
     const Back = () => (
@@ -127,39 +130,66 @@
       return s;
     };
 
-    /* Layout U con subset móvil (enfocar centro) */
-    function computeULayout(stageW, stageH, cardW, cardH, total, lastAdjustDeg=12){
+    /* Layout U con lógica por breakpoint */
+    function computeLayoutByBreakpoint(stageW, stageH, cardW, cardH, total=22){
+      // márgenes
       const mx = Math.max(cardW*0.6, 24);
       const myTop = Math.max(cardH*0.35, 16);
-      const myBottom = Math.max(cardH*0.35, 16);
+      const myBottomDesktop = Math.max(cardH*0.5, 20);
+      const myBottomTablet  = Math.max(cardH*0.45, 18);
+      const myBottomMobile  = Math.max(cardH*0.4, 16);
 
       const cx = stageW / 2;
-      const cy = stageH * 0.52;
 
+      // radios base (se ajustan con márgenes)
       const rx = Math.max((stageW/2) - mx - cardW/2, cardW*1.5);
-      const ry = Math.max((stageH/2) - myTop - cardH/2, cardH*1.5);
+      const ryBase = Math.max((stageH/2) - myTop - cardH/2, cardH*1.5);
 
-      // Rango completo (desktop/tablet)
-      let startIndex = 0, endIndex = total-1;
-
-      // Mobile: mostrar solo tramo central (9 cartas por defecto)
-      if (stageW < 640){
-        const span = 9; // probá 7/9/11 según gusto
-        const mid = Math.floor(total/2);
-        startIndex = Math.max(0, mid - Math.floor(span/2));
-        endIndex   = Math.min(total-1, mid + Math.floor(span/2));
+      // Desktop: U completa, centro más alto (como versión original)
+      if (stageW >= 920){
+        const cy = Math.max(stageH * 0.44, myTop + cardH/2);
+        const ry = Math.min(ryBase, (stageH - myBottomDesktop - cardH/2) - cy);
+        return Array.from({length: total}).map((_, i) => {
+          const t = i/(total-1), ang = Math.PI - t*Math.PI;
+          const x = cx + rx*Math.cos(ang);
+          const y = cy + ry*Math.sin(ang);
+          let rot = (ang*180/Math.PI)-90;
+          if(i===total-1) rot += 12;
+          return {left:x-cardW/2, top:y-cardH/2, rot};
+        });
       }
 
-      const out=[];
-      for(let i=startIndex;i<=endIndex;i++){
-        const t=i/(total-1), ang=Math.PI - t*Math.PI; // 180..0
-        const x=cx + rx*Math.cos(ang);
-        const y=cy + ry*Math.sin(ang);
-        let rot=(ang*180/Math.PI)-90;
-        if(i===endIndex) rot+=lastAdjustDeg;
-        out.push({left:x-cardW/2, top:y-cardH/2, rot});
+      // Tablet: U completa, centro un poco más bajo
+      if (stageW >= 640){
+        const cy = Math.max(stageH * 0.48, myTop + cardH/2);
+        const ry = Math.min(ryBase, (stageH - myBottomTablet - cardH/2) - cy);
+        return Array.from({length: total}).map((_, i) => {
+          const t = i/(total-1), ang = Math.PI - t*Math.PI;
+          const x = cx + rx*Math.cos(ang);
+          const y = cy + ry*Math.sin(ang);
+          let rot = (ang*180/Math.PI)-90;
+          if(i===total-1) rot += 12;
+          return {left:x-cardW/2, top:y-cardH/2, rot};
+        });
       }
-      return out;
+
+      // Mobile: abanico real de 9 cartas en arco explícito alrededor del centro
+      const span = 9;                   // cantidad visible
+      const thetaSpan = 140 * Math.PI/180; // amplitud del abanico
+      const thetaMid  = Math.PI/2;      // 90° (parte baja de la U)
+      const thetaStart= thetaMid + thetaSpan/2; // empezamos a la derecha
+      const cy = Math.max(stageH * 0.50, myTop + cardH/2); // subido para que no quede tan abajo
+      const ry = Math.min(ryBase, (stageH - myBottomMobile - cardH/2) - cy);
+
+      return Array.from({length: span}).map((_, i) => {
+        const tt = (span===1)? 0.5 : i/(span-1); // 0..1
+        const ang = thetaStart - tt*thetaSpan;   // barrido horario -> antihorario
+        const x = cx + rx*Math.cos(ang);
+        const y = cy + ry*Math.sin(ang);
+        let rot = (ang*180/Math.PI)-90;
+        if(i===span-1) rot += 12;
+        return {left:x-cardW/2, top:y-cardH/2, rot};
+      });
     }
 
     function TarotU(){
@@ -178,7 +208,7 @@
       }, [stageRef.current, vw, vh, run]);
 
       const layout = useMemo(
-        ()=>computeULayout(stageW, stageH, cardVars.w, cardVars.h, CARD_TOTAL, 12),
+        ()=>computeLayoutByBreakpoint(stageW, stageH, cardVars.w, cardVars.h, 22),
         [stageW, stageH, cardVars.w, cardVars.h]
       );
 
