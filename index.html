@@ -76,7 +76,19 @@
       const e = React.createElement;
 
       function ChatIcon(){
-        return e('svg', {viewBox:'0 0 64 64', className:'w-14 h-14', 'aria-hidden':true}, [
+        return e('svg', {viewBox:'0 0 64 64', className:'w-12 h-12 md:w-14 md:h-14', 'aria-hidden':true}, [
+          e('defs', null,
+            e('linearGradient', {id:'gc', x1:'0', x2:'1'}, [
+              e('stop', {offset:'0', stopColor:'#7c5cff'}),
+              e('stop', {offset:'1', stopColor:'#4b2dbf'})
+            ])
+          ),
+          e('path', {d:'M10 12h44a6 6 0 0 1 6 6v20a6 6 0 0 1-6 6H28l-10 8-2-8H10a6 6 0 0 1-6-6V18a6 6 0 0 1 6-6z', fill:'url(#gc)'}),
+          e('circle', {cx:22, cy:28, r:3, fill:'#fff'}),
+          e('circle', {cx:32, cy:28, r:3, fill:'#fff'}),
+          e('circle', {cx:42, cy:28, r:3, fill:'#fff'})
+        ]);
+      }, [
           e('defs', null,
             e('linearGradient', {id:'gc', x1:'0', x2:'1'}, [
               e('stop', {offset:'0', stopColor:'#7c5cff'}),
@@ -100,6 +112,14 @@
           const y2 = 32 + 26*Math.sin(a);
           lines.push(e('line', {key:i, x1, y1, x2, y2}));
         }
+        return e('svg', {viewBox:'0 0 64 64', className:'w-12 h-12 md:w-14 md:h-14', 'aria-hidden':true},
+          e('g', {fill:'none', stroke:'#e7c372', strokeWidth:2, strokeLinecap:'round'}, [
+            e('path', {d:'M40 10a20 20 0 1 1-8 44 16 20 0 1 0 8-44z'}),
+            ...lines
+          ])
+        );
+      }));
+        }
         return e('svg', {viewBox:'0 0 64 64', className:'w-14 h-14', 'aria-hidden':true},
           e('g', {fill:'none', stroke:'#e7c372', strokeWidth:2, strokeLinecap:'round'}, [
             e('path', {d:'M40 10a20 20 0 1 1-8 44 16 20 0 1 0 8-44z'}),
@@ -120,14 +140,14 @@
         return e('button', {
             key:id,
             onClick,
-            className:(effectClass || 'btn-animated') + ' group relative text-left rounded-2xl border border-white/15 bg-white/5 backdrop-blur p-6 md:p-8 hover:shadow-2xl hover:shadow-violet-800/20 focus:outline-none focus:ring-2 focus:ring-violet-300/40 transition-transform duration-200 hover:-translate-y-0.5'
+            className:(effectClass || 'btn-animated') + ' group relative w-full text-center md:text-left rounded-2xl border border-white/15 bg-white/5 backdrop-blur p-5 md:p-8 hover:shadow-2xl hover:shadow-violet-800/20 focus:outline-none focus:ring-2 focus:ring-violet-300/40 transition-transform duration-200 hover:-translate-y-0.5'
           }, [
-            e('div', {className:'flex items-start gap-4 relative'}, [
-              e('div', {className:'shrink-0 drop-shadow-lg'}, icon),
+            e('div', {className:'flex flex-col md:flex-row items-center md:items-start gap-3 md:gap-4 relative'}, [
+              e('div', {className:'shrink-0 drop-shadow-lg mb-2 md:mb-0'}, icon),
               e('div', {className:'flex flex-col justify-between flex-1'}, [
-                e('h2', {className:'text-xl md:text-2xl font-semibold mb-1'}, title),
-                e('p', {className:'text-white/80 text-sm md:text-base leading-relaxed'}, blurb),
-                e('div', {className: ctaClass + ' gap-2 text-violet-200 relative z-10'}, [
+                e('h2', {className:'text-lg sm:text-xl md:text-2xl font-semibold mb-1'}, title),
+                e('p', {className:'text-white/80 text-sm sm:text-base leading-relaxed'}, blurb),
+                e('div', {className: ctaClass + ' gap-2 text-violet-200 relative z-10 justify-center md:justify-start'}, [
                   e('span', {className:'font-medium'}, cta),
                   e('span', {className:'transition-transform group-hover:translate-x-0.5'}, e(ArrowIcon))
                 ])
@@ -174,8 +194,8 @@
             e('a', {href:'#contacto', className:'text-sm opacity-80 hover:opacity-100'}, 'Contacto')
           ]),
 
-          e('div', {className:'max-w-6xl mx-auto px-4 pt-8 pb-4 short-mt-auto'}, [
-            e('h1', {className:'text-3xl md:text-5xl font-bold leading-tight'}, [
+          e('div', {className:'max-w-6xl mx-auto px-4 pt-6 pb-3 short-mt-auto flex flex-col items-center text-center md:items-start md:text-left'}, , [
+            e('h1', {className:'text-2xl sm:text-3xl md:text-5xl font-bold leading-tight'}, [
               'Charlas privadas y experiencias místicas.',
               e('br', {className:'hidden md:block'}),
               e('span', {className:'text-violet-200'}, 'Elegí tu camino.')
@@ -183,7 +203,7 @@
             e('p', {className:'mt-3 text-white/80 max-w-2xl'}, 'Un puente entre la intimidad de la charla y la sabiduría del Tarot')
           ]),
 
-          e('div', {className:'max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-2 gap-6 short-mb-auto'},
+          e('div', {className:'max-w-6xl mx-auto px-4 py-6 md:py-8 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 short-mb-auto place-items-center md:place-items-stretch'}, ,
             cards.map(c => e(Card, c))
           ),
 
