@@ -9,40 +9,44 @@
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
+    /* Fondo único de la página */
+    body{
+      min-height:100vh; margin:0;
+      background: radial-gradient(1200px 600px at 50% 20%, #5f3bb8 0%, #3b1a77 45%, #1a083a 100%);
+      color:#fff; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+    }
+    /* Stage centrado y transparente para que se vea el mismo fondo */
+    .stage{
+      width:min(1280px,95vw);
+      height:min(720px,85vh);
+      position:relative;
+      overflow:hidden;
+      /* transparente para que no se vea corte de fondo */
+      background: transparent;
+    }
     :root{ --card-w:128px; --card-h:204px; }
-    .stage{ width:min(1280px,95vw); height:min(720px,85vh); position:relative; margin:auto; overflow:hidden;
-            background:radial-gradient(1200px 600px at 50% 20%, #5f3bb8 0%, #3b1a77 45%, #1a083a 100%); border:1px solid #ffffff22; border-radius:16px;}
-    .card{ position:absolute; width:var(--card-w); height:var(--card-h); border-radius:14px; overflow:hidden;
-           border:1px solid rgba(231,195,114,.35); box-shadow:0 10px 25px rgba(0,0,0,.5), inset 0 0 0 1px #6d4ad140;
-           transform-origin:50% 85%; opacity:0; transform:translateY(110vh) rotate(0deg);
-           transition-property:transform,opacity; transition-duration:.9s; transition-timing-function:cubic-bezier(.2,.8,.2,1); }
+    .card{
+      position:absolute; width:var(--card-w); height:var(--card-h);
+      border-radius:14px; overflow:hidden;
+      border:1px solid rgba(231,195,114,.35);
+      box-shadow:0 10px 25px rgba(0,0,0,.5), inset 0 0 0 1px #6d4ad140;
+      transform-origin:50% 85%;
+      opacity:0; transform:translateY(110vh) rotate(0deg);
+      transition-property:transform,opacity;
+      transition-duration:.9s;
+      transition-timing-function:cubic-bezier(.2,.8,.2,1);
+    }
     .card.show{ opacity:1; }
     .card svg{ position:absolute; inset:0; width:100%; height:100%; display:block; }
     @media (max-width:920px){ :root{ --card-w:110px; --card-h:192px; } }
     @media (max-width:640px){ :root{ --card-w:88px;  --card-h:154px; } }
   </style>
 </head>
-<body class="min-h-screen bg-[#0f0830] text-white">
-  <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-    <a href="/" class="text-sm opacity-80 hover:opacity-100">&larr; Volver al hub</a>
-    <div class="text-sm bg-white/5 border border-white/10 rounded-xl px-3 py-2 flex items-center gap-4">
-      <div class="flex items-center gap-2">
-        <label for="rot22" class="opacity-80">Rotación carta #22</label>
-        <input id="rot22" type="range" min="-90" max="90" step="1" value="15" style="width:160px"/>
-        <input id="rot22num" type="number" class="w-16 px-2 py-1 rounded text-black" value="15"/>
-        <span class="opacity-80">°</span>
-      </div>
-      <button id="replay" class="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/15 border border-white/15">
-        Reiniciar entrada
-      </button>
-      <label class="hidden sm:flex items-center gap-2 opacity-80">
-        Dorso (opcional)
-        <input id="backimg" type="file" accept="image/*" class="text-sm"/>
-      </label>
-    </div>
+<body>
+  <!-- Contenedor centrado en la pantalla -->
+  <div class="min-h-screen w-full flex items-center justify-center">
+    <div id="root"></div>
   </div>
-
-  <div id="root"></div>
 
   <script type="text/babel" data-presets="react">
     const { useEffect, useMemo, useRef, useState } = React;
@@ -51,10 +55,13 @@
     const CARD_W = 128, CARD_H = 204;
     const STAGE_W = 1280, STAGE_H = 720;
 
+    // Dorso con luna mística
     const Back = () => (
       <svg viewBox="0 0 100 160" aria-hidden>
         <defs>
-          <radialGradient id="g" cx="50%" cy="20%" r="80%"><stop offset="0%" stopColor="#3a1e73"/><stop offset="65%" stopColor="#2a105a"/><stop offset="100%" stopColor="#160a34"/></radialGradient>
+          <radialGradient id="g" cx="50%" cy="20%" r="80%">
+            <stop offset="0%" stopColor="#3a1e73"/><stop offset="65%" stopColor="#2a105a"/><stop offset="100%" stopColor="#160a34"/>
+          </radialGradient>
         </defs>
         <rect x="0" y="0" width="100" height="160" rx="10" fill="url(#g)"/>
         <path d="M0,110 Q50,70 100,110" fill="none" stroke="#6d4ad1" strokeOpacity=".35" strokeWidth=".8"/>
@@ -64,21 +71,28 @@
         <g stroke="#e7c372" fill="none" strokeWidth="1">
           <circle cx="50" cy="80" r="20"/>
           <path d="M60 60 A20 20 0 1 1 60 100 A16 20 0 1 0 60 60"/>
-          <path d="M46 75 q2 -2 4 0"/><path d="M46 85 q2 2 4 0"/><circle cx="50" cy="80" r="1.5" fill="#e7c372" stroke="none"/><path d="M52 79 q1 1 0 2"/>
-          {Array.from({length:32}).map((_,i)=>{const a=(i*11.25)*Math.PI/180;const x1=50+22*Math.cos(a),y1=80+22*Math.sin(a),x2=50+28*Math.cos(a),y2=80+28*Math.sin(a);return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2}/>})}
+          <path d="M46 75 q2 -2 4 0"/><path d="M46 85 q2 2 4 0"/>
+          <circle cx="50" cy="80" r="1.5" fill="#e7c372" stroke="none"/><path d="M52 79 q1 1 0 2"/>
+          {Array.from({length:32}).map((_,i)=>{
+            const a=(i*11.25)*Math.PI/180;
+            const x1=50+22*Math.cos(a), y1=80+22*Math.sin(a);
+            const x2=50+28*Math.cos(a), y2=80+28*Math.sin(a);
+            return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2}/>;
+          })}
         </g>
       </svg>
     );
 
-    function CardBack({ backSrc }){
+    function CardBack(){
       return (
-        <div className="absolute inset-0 rounded-xl overflow-hidden" style={{border:'1px solid #e7c37255', boxShadow:'0 10px 25px #0008, inset 0 0 0 1px #6d4ad140'}}>
-          {backSrc ? <img src={backSrc} className="w-full h-full object-cover select-none" draggable={false}/> : <Back/>}
+        <div className="absolute inset-0 rounded-xl overflow-hidden"
+             style={{border:'1px solid #e7c37255', boxShadow:'0 10px 25px #0008, inset 0 0 0 1px #6d4ad140'}}>
+          <Back/>
         </div>
       );
     }
 
-    function computeULayout(count, W, H, lastAdjustDeg=15){
+    function computeULayout(count, lastAdjustDeg=15){
       const cx=700, cy=300, radiusX=600, radiusY=380;
       const out=[];
       for(let i=0;i<count;i++){
@@ -93,30 +107,25 @@
     }
 
     function TarotU(){
-      const [lastAdjust,setLastAdjust]=useState(15);
-      const [backSrc,setBackSrc]=useState(null);
+      const [lastAdjust] = useState(15); // sin UI: valor fijo
       const [run,setRun]=useState(0);
-      const layout = useMemo(()=>computeULayout(CARD_COUNT, STAGE_W, STAGE_H, lastAdjust), [lastAdjust]);
+      const layout = useMemo(()=>computeULayout(CARD_COUNT, lastAdjust), [lastAdjust]);
       const refs=useRef([]);
 
-      useEffect(()=>()=>{ if(backSrc) URL.revokeObjectURL(backSrc); },[backSrc]);
-
-      // Animación: doble RAF + reflow forzado
+      // Animación: doble RAF + reflow
       useEffect(()=>{
-        // estado inicial
+        // estado inicial (fuera de pantalla)
         refs.current.forEach((el,i)=>{
           if(!el) return;
           el.classList.remove('show');
           const {left, top, rot}=layout[i];
-          el.style.left = (left)+'px';
-          el.style.top  = (top)+'px';
+          el.style.left = left+'px';
+          el.style.top  = top +'px';
           el.style.transform = `translateY(110vh) rotate(${rot-20}deg)`;
         });
-
-        // forzar reflow
+        // reflow y luego destino con stagger
         requestAnimationFrame(()=>{
           refs.current.forEach(el=>{ if(el) el.getBoundingClientRect(); });
-          // aplicar estado final con stagger
           requestAnimationFrame(()=>{
             refs.current.forEach((el,i)=>{
               if(!el) return;
@@ -130,23 +139,18 @@
         });
       }, [layout, run]);
 
-      // controles externos
+      // Relanzar animación al hacer click en el fondo (opcional)
       useEffect(()=>{
-        const replay=document.getElementById('replay');
-        const s=document.getElementById('rot22');
-        const n=document.getElementById('rot22num');
-        const b=document.getElementById('backimg');
-        if(replay) replay.onclick=()=> setRun(v=>v+1);
-        if(s){ s.oninput=(e)=>{ n.value=e.target.value; setLastAdjust(parseInt(e.target.value||'0')); }; }
-        if(n){ n.oninput=(e)=>{ s.value=e.target.value; setLastAdjust(parseInt(e.target.value||'0')); }; }
-        if(b){ b.onchange=(e)=>{ const f=e.target.files?.[0]; if(!f) return; const url=URL.createObjectURL(f); setBackSrc(prev=>{ if(prev) URL.revokeObjectURL(prev); return url; }); }; }
-      },[]);
+        const handler=()=> setRun(v=>v+1);
+        document.addEventListener('click', handler);
+        return ()=> document.removeEventListener('click', handler);
+      }, []);
 
       return (
         <div className="stage">
           {Array.from({length:CARD_COUNT}).map((_,i)=>(
-            <div key={`${i}-${run}-${lastAdjust}`} ref={el=>refs.current[i]=el} className="card" style={{width: CARD_W, height: CARD_H}}>
-              <CardBack backSrc={backSrc}/>
+            <div key={`${i}-${run}-${lastAdjust}`} ref={el=>refs.current[i]=el} className="card" style={{width:CARD_W, height:CARD_H}}>
+              <CardBack/>
               <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs bg-black/50 px-1 rounded">{i+1}</div>
             </div>
           ))}
