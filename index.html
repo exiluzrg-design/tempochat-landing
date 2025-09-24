@@ -12,7 +12,6 @@
       background: radial-gradient(circle at top, #0b0b0c 0%, #050507 100%);
       color:#e8e8ec;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      /* antes tenía overflow:hidden; lo sacamos para que mobile pueda scrollear */
     }
 
     .wrap { 
@@ -30,7 +29,7 @@
       margin-bottom: 16px;
     }
 
-    /* ===== Barra de beneficios centrada ===== */
+    /* ===== Beneficios centrados ===== */
     .benefits {
       display:flex;
       justify-content:center;
@@ -69,8 +68,8 @@
       box-shadow: 0 0 20px rgba(34,197,94,.25);
       display:flex;
       flex-direction:column;
-      height: min(65vh, 70dvh); /* mejor en mobile con d vh */
-      /* sin overflow para que funcione sticky del input */
+      height: calc(100dvh - 210px); /* espacio razonable para header+beneficios en mobile */
+      max-height: 70vh; /* en desktop no ocupar todo */
     }
 
     #chat { 
@@ -80,7 +79,11 @@
       gap:10px; 
       overflow-y:auto; 
       padding-right:6px;
+
+      /* clave: deja margen para que la burbuja no quede debajo del input sticky */
       scroll-behavior: smooth;
+      scroll-padding-bottom: 96px; /* se actualiza por JS también */
+      padding-bottom: 96px;        /* se actualiza por JS también */
     }
 
     .msg { 
@@ -90,6 +93,9 @@
       white-space: pre-wrap; 
       font-size:15px;
       line-height:1.4;
+
+      /* por si el navegador ignora scroll-padding en el contenedor */
+      scroll-margin-bottom: 96px; /* se ve reforzado por JS */
     }
     .user { 
       align-self:flex-end; 
@@ -105,7 +111,7 @@
       box-shadow:0 0 12px rgba(168,85,247,.35);
     }
 
-    /* Barra de envío SIEMPRE visible dentro de la card */
+    /* Barra de envío sticky dentro de la card */
     .row { 
       display:flex; 
       gap:8px; 
@@ -139,14 +145,8 @@
     }
     button:hover { transform:scale(1.05); }
 
-    /* ===== Ajustes específicos para pantallas chicas ===== */
-    @media (max-width: 600px) {
-      .wrap { padding: 16px; }
-      .benefit { font-size:13px; padding:8px 14px; }
-      .card {
-        /* resta un alto aproximado de header+beneficios para liberar espacio al chat */
-        height: calc(100dvh - 190px);
-      }
+    @media (min-width: 801px) {
+      .card { height: 65vh; }
     }
   </style>
 </head>
@@ -165,7 +165,7 @@
     <div class="card">
       <div id="chat"></div>
 
-      <div class="row">
+      <div class="row" id="composer">
         <input id="text" placeholder="Escribí tu mensaje..." autocomplete="off" />
         <button id="send" type="button">Enviar</button>
       </div>
@@ -177,17 +177,44 @@
     const chatBox   = document.getElementById('chat');
     const input     = document.getElementById('text');
     const sendBtn   = document.getElementById('send');
+    const composer  = document.getElementById('composer');
 
     let sessionId = localStorage.getItem('tempochat_session') || null;
     const context = []; // historial corto que viaja al backend
+
+    // --- Ajuste dinámico para que ninguna burbuja quede "cortada" detrás del sticky ---
+    function applyFooterInset() {
+      const footerH = (composer?.offsetHeight || 0) + 16; // extra colchón
+      chatBox.style.scrollPaddingBottom = footerH + 'px';
+      chatBox.style.paddingBottom = footerH + 'px';
+      // Para navegadores que usan scroll-margin en los hijos:
+      document.querySelectorAll('.msg').forEach(el => {
+        el.style.scrollMarginBottom = footerH + 'px';
+      });
+    }
+
+    const raf = (fn) => requestAnimationFrame(() => requestAnimationFrame(fn));
+
+    function smoothReveal(el) {
+      // Espera a que el layout se estabilice y luego scrollea
+      raf(() => {
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+        // Fallback extra por si el teclado mueve el viewport luego
+        setTimeout(() => {
+          chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
+        }, 80);
+      });
+    }
 
     function add(role, text) {
       const div = document.createElement('div');
       div.className = 'msg ' + role;
       div.textContent = text;
       chatBox.appendChild(div);
-      // scroll automático robusto
-      div.scrollIntoView({ behavior:"smooth", block:"end" });
+
+      applyFooterInset();
+      smoothReveal(div);
+
       context.push({ role, content: text });
       if (context.length > 12) context.splice(0, context.length - 12);
     }
@@ -223,11 +250,19 @@
       }
     }
 
+    // Eventos
     sendBtn?.addEventListener('click', handleSend);
     input?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') { e.preventDefault(); handleSend(); }
     });
 
+    // Recalcular al cargar, al redimensionar y al abrir/cerrar teclado
+    window.addEventListener('load', applyFooterInset);
+    window.addEventListener('resize', applyFooterInset);
+    input.addEventListener('focus', applyFooterInset);
+    input.addEventListener('blur', applyFooterInset);
+
+    // Mensaje inicial
     add('assistant', '🌌 Bienvenido a TempoChat. ¿Qué tenés en la cabeza hoy?');
   </script>
 </body>
