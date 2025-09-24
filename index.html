@@ -2,7 +2,7 @@
 <html lang="es">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
     <title>TempoChat — Hub</title>
     <meta name="description" content="TempoChat Hub: conversaciones privadas de 10 minutos y Tarot IA en línea. Conectá con tu interior o descubrí tu destino con cartas místicas y guía inspirada. Privacidad real y enfoque humano." />
     <meta property="og:title" content="TempoChat — Hub" />
@@ -16,8 +16,15 @@
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
     <style>
-      html, body, #root { height: 100%; margin: 0; padding: 0; }
-      body { display: flex; flex-direction: column; }
+      /* Alturas estables en móvil (evita saltos por barra de direcciones) */
+      :root { --vh: 1vh; }
+      html, body, #root { height: auto; min-height: calc(var(--vh) * 100); margin: 0; padding: 0; }
+      body { display: flex; flex-direction: column; overscroll-behavior: none; }
+      .min-h-mobile { min-height: calc(var(--vh) * 100); }
+      @supports (height: 100dvh) {
+        /* Navegadores modernos: usar dvh que no cambia con UI */
+        html, body, #root, .min-h-mobile { min-height: 100dvh; }
+      }
 
       /* ====== Efecto: brillo diagonal en hover ====== */
       .btn-animated { position: relative; overflow: hidden; }
@@ -32,12 +39,29 @@
       /* Alineación uniforme para CTAs */
       .cta-row { min-height: 3rem; display: flex; align-items: center; }
       .cta-tarot { margin-top: 1.8rem !important; }
+
+      /* Centrado vertical del bloque (hero + tarjetas) en pantallas bajas */
+      @media (max-height: 700px) {
+        .short-mt-auto { margin-top: auto !important; }
+        .short-mb-auto { margin-bottom: auto !important; }
+      }
     </style>
   </head>
-  <body class="h-full min-h-screen">
-    <div id="root" class="flex flex-col h-full"></div>
+  <body class="min-h-mobile">
+    <div id="root" class="flex flex-col min-h-mobile"></div>
 
     <script>
+      // Fix de viewport en móviles (iOS/Android): evita movimiento en eje Y
+      (function(){
+        const setVH = () => {
+          const vh = window.innerHeight * 0.01;
+          document.documentElement.style.setProperty('--vh', `${vh}px`);
+        };
+        setVH();
+        window.addEventListener('resize', setVH);
+        window.addEventListener('orientationchange', setVH);
+      })();
+
       const e = React.createElement;
 
       function ChatIcon(){
@@ -139,7 +163,8 @@
             e('a', {href:'#contacto', className:'text-sm opacity-80 hover:opacity-100'}, 'Contacto')
           ]),
 
-          e('div', {className:'max-w-6xl mx-auto px-4 pt-8 pb-4 flex-grow'}, [
+          <!-- Hero (sube automáticamente en pantallas bajas) -->
+          e('div', {className:'max-w-6xl mx-auto px-4 pt-8 pb-4 flex-grow short-mt-auto'}, [
             e('h1', {className:'text-3xl md:text-5xl font-bold leading-tight'}, [
               'Charlas privadas y experiencias místicas.',
               e('br', {className:'hidden md:block'}),
@@ -148,7 +173,8 @@
             e('p', {className:'mt-3 text-white/80 max-w-2xl'}, 'Un puente entre la intimidad de la charla y la sabiduría del Tarot')
           ]),
 
-          e('div', {className:'max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-2 gap-6 flex-grow'},
+          <!-- Tarjetas (bajan automáticamente en pantallas bajas) -->
+          e('div', {className:'max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-2 gap-6 flex-grow short-mb-auto'},
             cards.map(c => e(Card, c))
           ),
 
