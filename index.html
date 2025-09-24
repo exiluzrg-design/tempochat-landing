@@ -11,14 +11,14 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
     <!-- Framer Motion -->
     <script src="https://unpkg.com/framer-motion/dist/framer-motion.umd.js"></script>
-    <!-- Babel (para JSX en el navegador, solo prototipo) -->
+    <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   </head>
   <body class="min-h-screen">
     <div id="root"></div>
 
-    <script type="text/babel">
-      const { motion } = window['framer-motion'];
+    <script type="text/babel" data-presets="react">
+      const { motion } = window.framerMotion; // ✅ nombre global correcto
 
       function HubLanding() {
         const cards = [
