@@ -1,13 +1,14 @@
 {
   "builds": [
-    { "src": "public/(.*)", "use": "@vercel/static" }
+    { "src": "public/(.*)", "use": "@vercel/static" },
+    { "src": "index.html", "use": "@vercel/static" },
+    { "src": "tempochat.html", "use": "@vercel/static" },
+    { "src": "tarot.html", "use": "@vercel/static" }
   ],
   "routes": [
     { "handle": "filesystem" },
-
-    { "src": "/", "dest": "/index.html" },
-    { "src": "/index", "dest": "/index.html" },
-
-    { "src": "/tarot", "dest": "/tarot.html" }
+    { "src": "/tempochat", "dest": "/tempochat.html" },
+    { "src": "/tarot", "dest": "/tarot.html" },
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
