@@ -1,228 +1,154 @@
 <!doctype html>
 <html lang="es">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>TempoChat</title>
-  <style>
-    :root { color-scheme: dark; }
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TempoChat — Hub</title>
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React 18 -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- Framer Motion -->
+    <script src="https://unpkg.com/framer-motion/dist/framer-motion.umd.js"></script>
+    <!-- Babel (para JSX en el navegador, solo prototipo) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  </head>
+  <body class="min-h-screen">
+    <div id="root"></div>
 
-    body {
-      margin:0;
-      background: radial-gradient(circle at top, #0b0b0c 0%, #050507 100%);
-      color:#e8e8ec;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-    }
+    <script type="text/babel">
+      const { motion } = window['framer-motion'];
 
-    .wrap { max-width: 760px; margin: 0 auto; padding: 24px; }
+      function HubLanding() {
+        const cards = [
+          {
+            id: "tempochat",
+            title: "TempoChat",
+            blurb: "Charlas privadas de 10 minutos, sin registros, con privacidad real.",
+            cta: "Entrar a TempoChat",
+            onClick: () => (window.location.href = "/tempochat"),
+            icon: (
+              <svg viewBox="0 0 64 64" className="w-14 h-14" aria-hidden>
+                <defs>
+                  <linearGradient id="gc" x1="0" x2="1">
+                    <stop offset="0" stopColor="#7c5cff" />
+                    <stop offset="1" stopColor="#4b2dbf" />
+                  </linearGradient>
+                </defs>
+                <path d="M10 12h44a6 6 0 0 1 6 6v20a6 6 0 0 1-6 6H28l-10 8-2-8H10a6 6 0 0 1-6-6V18a6 6 0 0 1 6-6z" fill="url(#gc)"/>
+                <circle cx="22" cy="28" r="3" fill="#fff"/>
+                <circle cx="32" cy="28" r="3" fill="#fff"/>
+                <circle cx="42" cy="28" r="3" fill="#fff"/>
+              </svg>
+            ),
+          },
+          {
+            id: "tarot",
+            title: "Tarot IA",
+            blurb: "Tirada interactiva, mística y guiada por IA. Elegí 22 cartas y viví la experiencia.",
+            cta: "Entrar al Tarot",
+            onClick: () => (window.location.href = "/tarot"),
+            icon: (
+              <svg viewBox="0 0 64 64" className="w-14 h-14" aria-hidden>
+                <g fill="none" stroke="#e7c372" strokeWidth="2" strokeLinecap="round">
+                  <path d="M40 10a20 20 0 1 1-8 44 16 20 0 1 0 8-44z" />
+                  {[...Array(16)].map((_, i) => {
+                    const a = (i * 22.5 * Math.PI) / 180;
+                    const x1 = 32 + 20 * Math.cos(a);
+                    const y1 = 32 + 20 * Math.sin(a);
+                    const x2 = 32 + 26 * Math.cos(a);
+                    const y2 = 32 + 26 * Math.sin(a);
+                    return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} />;
+                  })}
+                </g>
+              </svg>
+            ),
+          },
+        ];
 
-    h1 {
-      text-align:center; font-size: 2.2em;
-      background: linear-gradient(90deg,#22c55e,#3b82f6,#a855f7);
-      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-      margin-bottom: 16px;
-    }
+        return (
+          <div className="min-h-screen w-full text-white overflow-hidden"
+               style={{ background: "radial-gradient(1200px 800px at 50% 10%, #5b3ef1 0%, #2b186e 40%, #0f0830 100%)" }}>
+            
+            {/* Navbar */}
+            <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-white/10 border border-white/20 grid place-items-center">
+                  <div className="w-4 h-4 rounded-full bg-gradient-to-br from-violet-400 to-indigo-600" />
+                </div>
+                <span className="font-semibold tracking-wide">TempoChat</span>
+              </div>
+              <a href="#contacto" className="text-sm opacity-80 hover:opacity-100">Contacto</a>
+            </div>
 
-    /* ===== Beneficios (compactos en mobile) ===== */
-    .benefits {
-      display:flex; justify-content:center; align-items:center; gap:12px;
-      flex-wrap:wrap; margin-bottom:16px; text-align:center;
-    }
-    .benefit {
-      background: linear-gradient(135deg,#1e1e20,#2c2c30);
-      border:1px solid #2f2f35; border-radius:20px;
-      padding:8px 16px; font-size:14px; display:flex; align-items:center; gap:6px;
-      white-space:nowrap; box-shadow:0 0 12px rgba(59,130,246,.3);
-      transition: transform .2s, box-shadow .2s;
-    }
-    .benefit span { font-size:16px; }
-    .benefit:hover { transform: translateY(-2px) scale(1.05); box-shadow:0 0 16px rgba(168,85,247,.45); }
+            {/* Hero */}
+            <div className="max-w-6xl mx-auto px-4 pt-8 pb-4">
+              <motion.h1
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                className="text-3xl md:text-5xl font-bold leading-tight"
+              >
+                Charlas privadas y experiencias místicas.
+                <br className="hidden md:block" />
+                <span className="text-violet-200">Elegí tu camino.</span>
+              </motion.h1>
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.1 }}
+                className="mt-3 text-white/80 max-w-2xl"
+              >
+                Un hub simple para acceder a <strong>TempoChat</strong> o a <strong>Tarot IA</strong>.
+              </motion.p>
+            </div>
 
-    /* ===== Caja del chat ===== */
-    .card {
-      background: rgba(20,20,23,0.85); border:1px solid #202025; border-radius:16px; 
-      padding:16px; box-shadow: 0 0 20px rgba(34,197,94,.25);
-      display:flex; flex-direction:column;
-      height: calc(100dvh - 210px); max-height: 70vh;
-    }
+            {/* Cards */}
+            <div className="max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+              {cards.map((c, idx) => (
+                <motion.button
+                  key={c.id}
+                  onClick={c.onClick}
+                  initial={{ opacity: 0, y: 20, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ duration: 0.6, delay: 0.15 + idx * 0.05 }}
+                  className="group text-left rounded-2xl border border-white/15 bg-white/5 backdrop-blur p-6 md:p-8 hover:bg-white/[0.08] hover:shadow-2xl hover:shadow-violet-800/20 focus:outline-none focus:ring-2 focus:ring-violet-300/40"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="shrink-0">{c.icon}</div>
+                    <div>
+                      <h2 className="text-xl md:text-2xl font-semibold mb-1">{c.title}</h2>
+                      <p className="text-white/80 text-sm md:text-base">{c.blurb}</p>
+                    </div>
+                  </div>
+                  <div className="mt-6 flex items-center gap-2 text-violet-200">
+                    <span className="font-medium">{c.cta}</span>
+                    <svg viewBox="0 0 24 24" className="w-5 h-5 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" strokeWidth="1.8">
+                      <path d="M5 12h12M13 6l6 6-6 6" />
+                    </svg>
+                  </div>
+                </motion.button>
+              ))}
+            </div>
 
-    #chat { 
-      flex:1; display:flex; flex-direction:column; gap:10px; 
-      overflow-y:auto; padding-right:6px;
-      scroll-behavior: smooth; scroll-padding-bottom: 96px; padding-bottom: 96px;
-    }
-
-    .msg { 
-      padding:12px 16px; border-radius:14px; max-width: 80%; white-space: pre-wrap; 
-      font-size:15px; line-height:1.4; scroll-margin-bottom: 96px;
-    }
-    .user { align-self:flex-end; background: linear-gradient(135deg,#1d4ed8,#3b82f6); color:#f0f6ff; box-shadow:0 0 12px rgba(59,130,246,.5); }
-    .assistant { align-self:flex-start; background: linear-gradient(135deg,#242427,#2b2b30); color:#e8e8ec; border:1px solid #2b2b30; box-shadow:0 0 12px rgba(168,85,247,.35); }
-
-    .row { 
-      display:flex; gap:8px; margin-top:12px; position: sticky; bottom: 0;
-      background: linear-gradient(180deg, rgba(20,20,23,0), rgba(20,20,23,0.95));
-      padding-top: 8px; padding-bottom: max(8px, env(safe-area-inset-bottom));
-      backdrop-filter: blur(6px);
-    }
-
-    input { flex:1; padding:12px; border-radius:10px; border:1px solid #2a2a2f; background:#0e0e10; color:#e8e8ec; }
-    button { padding:12px 14px; border-radius:10px; border:0; background: linear-gradient(135deg,#22c55e,#16a34a); color:#0b0b0c; font-weight:600; cursor:pointer; box-shadow:0 0 10px rgba(34,197,94,.5); transition:transform .15s; }
-    button:hover { transform:scale(1.05); }
-
-    @media (max-width: 600px) {
-      .wrap { padding: 16px; }
-      .benefit { font-size:12px; padding:6px 10px; }
-      .benefit span { font-size:14px; }
-      .benefits { gap:8px; display:grid; grid-template-columns: 1fr 1fr; justify-items:center; }
-      .card { height: calc(100dvh - 170px); }
-    }
-
-    @media (min-width: 801px) { .card { height: 65vh; } }
-
-    /* ===== Typing animado (tres puntos) ===== */
-    .typing {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-    }
-    .typing .dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #e8e8ec;
-      opacity: .25;
-      animation: blink 1s infinite;
-    }
-    .typing .dot:nth-child(2) { animation-delay: .2s; }
-    .typing .dot:nth-child(3) { animation-delay: .4s; }
-    @keyframes blink {
-      0%, 80%, 100% { opacity: .25; transform: translateY(0); }
-      40% { opacity: 1; transform: translateY(-2px); }
-    }
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <h1>TempoChat</h1>
-
-    <!-- Beneficios compactos -->
-    <div class="benefits">
-      <div class="benefit"><span>⚡</span> Sesiones 10 min</div>
-      <div class="benefit"><span>🔒</span> 100% anónimo</div>
-      <div class="benefit"><span>🌙</span> Disponible 24/7</div>
-      <div class="benefit"><span>💡</span> Bienestar y reflexión</div>
-    </div>
-
-    <div class="card">
-      <div id="chat"></div>
-
-      <div class="row" id="composer">
-        <input id="text" placeholder="Escribí tu mensaje..." autocomplete="off" />
-        <button id="send" type="button">Enviar</button>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    // ⚠️ ZONA BLINDADA: Lógica de memoria - NO TOCAR
-    const chatBox   = document.getElementById('chat');
-    const input     = document.getElementById('text');
-    const sendBtn   = document.getElementById('send');
-    const composer  = document.getElementById('composer');
-
-    let sessionId = localStorage.getItem('tempochat_session') || null;
-    const context = []; // historial corto que viaja al backend
-
-    function applyFooterInset() {
-      const footerH = (composer?.offsetHeight || 0) + 16;
-      chatBox.style.scrollPaddingBottom = footerH + 'px';
-      chatBox.style.paddingBottom = footerH + 'px';
-      document.querySelectorAll('.msg').forEach(el => { el.style.scrollMarginBottom = footerH + 'px'; });
-    }
-    const raf = (fn) => requestAnimationFrame(() => requestAnimationFrame(fn));
-    function smoothReveal(el) {
-      raf(() => {
-        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        setTimeout(() => { chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' }); }, 80);
-      });
-    }
-
-    function add(role, text) {
-      const div = document.createElement('div');
-      div.className = 'msg ' + role;
-      div.textContent = text;
-      chatBox.appendChild(div);
-      applyFooterInset();
-      smoothReveal(div);
-      context.push({ role, content: text });
-      if (context.length > 12) context.splice(0, context.length - 12);
-    }
-
-    // ===== Typing animado (tres puntos) =====
-    function addTyping() {
-      const t = document.createElement('div');
-      t.className = 'msg assistant';
-      t.dataset.typing = '1';
-      t.innerHTML = '<span class="typing"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>';
-      chatBox.appendChild(t);
-      applyFooterInset();
-      smoothReveal(t);
-      return t;
-    }
-    function removeTyping() {
-      const t = chatBox.querySelector('.assistant[data-typing="1"]');
-      if (t) t.remove();
-    }
-
-    async function callAPI(path, payload) {
-      const res = await fetch(`${location.origin}${path}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload || {})
-      });
-      if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
-      return res.json();
-    }
-
-    async function handleSend() {
-      const raw  = input?.value ?? '';
-      const text = String(raw).trim();
-      if (!text) { add('assistant', '⚠️ Escribí algo antes de enviar.'); return; }
-
-      add('user', text);
-      input.value = '';
-
-      const typing = addTyping();
-      try {
-        const data = await callAPI('/api/chat', { text, sessionId, context });
-
-        if (data.sessionId && data.sessionId !== sessionId) {
-          sessionId = data.sessionId;
-          localStorage.setItem('tempochat_session', sessionId);
-        }
-
-        removeTyping();
-        add('assistant', data.message || 'Sin mensaje');
-
-      } catch (e) {
-        console.error(e);
-        removeTyping();
-        add('assistant', '⚠️ Problema de red: ' + e.message);
+            {/* Footer */}
+            <footer id="contacto" className="border-t border-white/10">
+              <div className="max-w-6xl mx-auto px-4 py-6 text-sm text-white/70 flex flex-col md:flex-row gap-2 md:gap-6 items-center md:items-start justify-between">
+                <span>© {new Date().getFullYear()} TempoChat — Todos los derechos reservados.</span>
+                <div className="flex items-center gap-4">
+                  <a href="#" className="hover:text-white">Términos</a>
+                  <a href="#" className="hover:text-white">Privacidad</a>
+                  <a href="mailto:hola@tempochat.com" className="hover:text-white">Contacto</a>
+                </div>
+              </div>
+            </footer>
+          </div>
+        );
       }
-    }
 
-    sendBtn?.addEventListener('click', handleSend);
-    input?.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); handleSend(); }
-    });
-
-    window.addEventListener('load', applyFooterInset);
-    window.addEventListener('resize', applyFooterInset);
-    input.addEventListener('focus', applyFooterInset);
-    input.addEventListener('blur', applyFooterInset);
-
-    add('assistant', '🌌 Bienvenido a TempoChat. ¿Qué tenés en la cabeza hoy?');
-  </script>
-</body>
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(<HubLanding />);
+    </script>
+  </body>
 </html>
