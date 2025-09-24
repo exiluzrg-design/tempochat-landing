@@ -14,15 +14,17 @@
       margin:0;
       background: radial-gradient(2000px 1400px at 50% 45%, #5f3bb8 0%, #3b1a77 45%, #1a083a 100%);
       color:#fff;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
       overflow:hidden;
     }
     .screen{
       min-height:100vh;
       width:100vw;
       display:flex;
+      flex-direction:column;
       align-items:center;
       justify-content:center;
-      flex-direction:column; /* para que abajo se vea la imagen test */
       gap:20px;
     }
     .stage{
@@ -36,26 +38,23 @@
     .card{
       position:absolute; width:var(--card-w); height:var(--card-h);
       border-radius:14px; overflow:hidden;
+      border:1px solid rgba(231,195,114,.35);
+      box-shadow:0 10px 25px rgba(0,0,0,.5), inset 0 0 0 1px #6d4ad140;
       transform-origin:50% 85%;
       opacity:0; transform:translateY(110vh) rotate(0deg);
       transition-property:transform,opacity;
       transition-duration:.9s;
       transition-timing-function:cubic-bezier(.2,.8,.2,1);
-      background:#000;
     }
     .card.show{ opacity:1; }
-    .card img{
-      position:absolute; inset:0;
-      width:100%; height:100%;
-      object-fit: cover;
-    }
+    .card img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
   </style>
 </head>
 <body>
   <div class="screen">
     <div id="root"></div>
 
-    <!-- Imagen de prueba -->
+    <!-- 🔎 Imagen de prueba -->
     <div>
       <p>Imagen de prueba desde /public/test.png:</p>
       <img src="/test.png" alt="Imagen de prueba" width="150"/>
@@ -64,34 +63,37 @@
 
   <script type="text/babel" data-presets="react">
     const { useEffect, useMemo, useRef, useState } = React;
-    const CARD_COUNT = 5; // menos para probar rápido
+
+    const CARD_COUNT = 22;
     const CARD_W = 128, CARD_H = 204;
 
     function CardBack(){
       return <img src="/card-back.png" alt="Dorso carta de tarot" />;
     }
 
-    function computeLayout(count){
+    function computeULayout(count, lastAdjustDeg=15){
+      const cx=700, cy=300, radiusX=600, radiusY=380;
       const out=[];
-      const cx=600, cy=250, rx=400, ry=200;
       for(let i=0;i<count;i++){
         const t=i/(count-1), ang=Math.PI - t*Math.PI;
-        const x=cx+rx*Math.cos(ang);
-        const y=cy+ry*Math.sin(ang);
+        const x=cx + radiusX*Math.cos(ang);
+        const y=cy + radiusY*Math.sin(ang);
         let rot=(ang*180/Math.PI)-90;
+        if(i===count-1) rot+=lastAdjustDeg;
         out.push({left:x-CARD_W/2, top:y-CARD_H/2, rot});
       }
       return out;
     }
 
     function TarotU(){
-      const layout = useMemo(()=>computeLayout(CARD_COUNT), []);
+      const [run,setRun]=useState(0);
+      const layout=useMemo(()=>computeULayout(CARD_COUNT), []);
       const refs=useRef([]);
 
       useEffect(()=>{
         refs.current.forEach((el,i)=>{
           if(!el) return;
-          el.classList.remove('show');
+          el.classList.remove("show");
           const {left,top,rot}=layout[i];
           el.style.left=left+"px";
           el.style.top=top+"px";
@@ -104,18 +106,24 @@
               if(!el) return;
               const {rot}=layout[i];
               setTimeout(()=>{
-                el.classList.add('show');
+                el.classList.add("show");
                 el.style.transform=`translateY(0) rotate(${rot}deg)`;
-              }, i*150);
+              }, i*90);
             });
           });
         });
-      }, [layout]);
+      }, [layout, run]);
+
+      useEffect(()=>{
+        const handler=()=> setRun(v=>v+1);
+        document.addEventListener("click", handler);
+        return ()=> document.removeEventListener("click", handler);
+      }, []);
 
       return (
         <div className="stage">
           {layout.map((pos,i)=>(
-            <div key={i} ref={el=>refs.current[i]=el} className="card" style={{left:pos.left, top:pos.top}}>
+            <div key={i+"-"+run} ref={el=>refs.current[i]=el} className="card" style={{left:pos.left, top:pos.top}}>
               <CardBack/>
             </div>
           ))}
@@ -123,7 +131,7 @@
       );
     }
 
-    const root = ReactDOM.createRoot(document.getElementById('root'));
+    const root=ReactDOM.createRoot(document.getElementById("root"));
     root.render(<TarotU/>);
   </script>
 </body>
