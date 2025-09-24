@@ -6,23 +6,108 @@
   <title>TempoChat</title>
   <style>
     :root { color-scheme: dark; }
-    body { margin:0; background:#0b0b0c; color:#e8e8ec; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; }
-    .wrap { max-width: 760px; margin: 0 auto; padding: 24px; }
-    .card { background:#141417; border:1px solid #202025; border-radius:14px; padding:16px; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
-    #chat { margin-top:16px; display:flex; flex-direction:column; gap:10px; max-height:60vh; overflow:auto; }
-    .msg { padding:10px 14px; border-radius:12px; max-width: 80%; white-space: pre-wrap; }
-    .user { align-self:flex-end; background:#1d4ed8; color:#f0f6ff; }
-    .assistant { align-self:flex-start; background:#242427; color:#e8e8ec; border:1px solid #2b2b30; }
-    .row { display:flex; gap:8px; margin-top:12px; }
-    input { flex:1; padding:12px; border-radius:10px; border:1px solid #2a2a2f; background:#0e0e10; color:#e8e8ec; }
-    button { padding:12px 14px; border-radius:10px; border:0; background:#22c55e; color:#0b0b0c; font-weight:600; cursor:pointer; }
-    .pill { font-size:12px; opacity:.7; }
+
+    body {
+      margin:0;
+      background: radial-gradient(circle at top, #0b0b0c 0%, #050507 100%);
+      color:#e8e8ec;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      overflow:hidden;
+    }
+
+    .wrap { 
+      max-width: 760px; 
+      margin: 0 auto; 
+      padding: 24px; 
+    }
+
+    h1 {
+      text-align:center;
+      font-size: 2.2em;
+      background: linear-gradient(90deg,#22c55e,#3b82f6,#a855f7);
+      -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;
+      margin-bottom: 8px;
+    }
+
+    .card {
+      background: rgba(20,20,23,0.85);
+      border:1px solid #202025;
+      border-radius:16px; 
+      padding:16px; 
+      box-shadow: 0 0 20px rgba(34,197,94,.25);
+      display:flex;
+      flex-direction:column;
+      height: 70vh;
+    }
+
+    #chat { 
+      flex:1;
+      display:flex; 
+      flex-direction:column; 
+      gap:10px; 
+      overflow-y:auto; 
+      padding-right:6px;
+      scroll-behavior: smooth;
+    }
+
+    .msg { 
+      padding:12px 16px; 
+      border-radius:14px; 
+      max-width: 80%; 
+      white-space: pre-wrap; 
+      font-size:15px;
+      line-height:1.4;
+    }
+
+    .user { 
+      align-self:flex-end; 
+      background: linear-gradient(135deg,#1d4ed8,#3b82f6); 
+      color:#f0f6ff; 
+      box-shadow:0 0 12px rgba(59,130,246,.5);
+    }
+
+    .assistant { 
+      align-self:flex-start; 
+      background: linear-gradient(135deg,#242427,#2b2b30); 
+      color:#e8e8ec; 
+      border:1px solid #2b2b30; 
+      box-shadow:0 0 12px rgba(168,85,247,.35);
+    }
+
+    .row { 
+      display:flex; 
+      gap:8px; 
+      margin-top:12px; 
+    }
+
+    input { 
+      flex:1; 
+      padding:12px; 
+      border-radius:10px; 
+      border:1px solid #2a2a2f; 
+      background:#0e0e10; 
+      color:#e8e8ec; 
+    }
+
+    button { 
+      padding:12px 14px; 
+      border-radius:10px; 
+      border:0; 
+      background: linear-gradient(135deg,#22c55e,#16a34a);
+      color:#0b0b0c; 
+      font-weight:600; 
+      cursor:pointer; 
+      box-shadow:0 0 10px rgba(34,197,94,.5);
+      transition:transform .15s;
+    }
+
+    button:hover { transform:scale(1.05); }
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1>TempoChat</h1>
-    <p class="pill">Memoria activa: cliente (context) + servidor (Redis si está habilitado)</p>
 
     <div class="card">
       <div id="chat"></div>
@@ -35,22 +120,23 @@
   </div>
 
   <script>
+    // ⚠️ ZONA BLINDADA: Lógica de memoria - NO TOCAR
     const chatBox   = document.getElementById('chat');
     const input     = document.getElementById('text');
     const sendBtn   = document.getElementById('send');
 
-    // === Memoria del cliente ===
     let sessionId = localStorage.getItem('tempochat_session') || null;
-    const context = []; // historial corto que viajará al backend
+    const context = []; // historial corto que viaja al backend
 
     function add(role, text) {
       const div = document.createElement('div');
       div.className = 'msg ' + role;
       div.textContent = text;
       chatBox.appendChild(div);
-      chatBox.scrollTop = chatBox.scrollHeight;
+      
+      // scroll automático robusto
+      div.scrollIntoView({ behavior:"smooth", block:"end" });
 
-      // guardamos en contexto (últimos 12 mensajes)
       context.push({ role, content: text });
       if (context.length > 12) context.splice(0, context.length - 12);
     }
@@ -75,29 +161,24 @@
 
       try {
         const data = await callAPI('/api/chat', { text, sessionId, context });
-
-        // persistir sessionId para futuras vueltas/recargas
         if (data.sessionId && data.sessionId !== sessionId) {
           sessionId = data.sessionId;
           localStorage.setItem('tempochat_session', sessionId);
         }
-
         add('assistant', data.message || 'Sin mensaje');
-
       } catch (e) {
         console.error(e);
         add('assistant', '⚠️ Problema de red: ' + e.message);
       }
     }
 
-    // Eventos
     sendBtn?.addEventListener('click', handleSend);
     input?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') { e.preventDefault(); handleSend(); }
     });
 
-    // Mensaje inicial
-    add('assistant', 'Hola, ¿qué tenés en la cabeza? Decime en una línea y vamos al grano.');
+    // mensaje inicial
+    add('assistant', '🌌 Bienvenido a TempoChat. ¿Qué tenés en la cabeza hoy?');
   </script>
 </body>
 </html>
