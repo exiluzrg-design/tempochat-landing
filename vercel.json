@@ -5,11 +5,9 @@
   "routes": [
     { "handle": "filesystem" },
 
-    { "src": "/$", "dest": "/index.html" },
+    { "src": "/", "dest": "/index.html" },
     { "src": "/index", "dest": "/index.html" },
 
-    { "src": "/tarot", "dest": "/tarot.html" },
-
-    { "src": "/(.*)", "dest": "/$1" }
+    { "src": "/tarot", "dest": "/tarot.html" }
   ]
 }
