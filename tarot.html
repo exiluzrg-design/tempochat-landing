@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Tarot IA — Tirada en U</title>
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      :root{
+        /* proporción tipo tarot ~ 64x112 (1:1.75) */
+        --card-w: 140px;
+        --card-h: 245px;
+      }
+      .stage {
+        width: min(1280px, 95vw);
+        height: min(720px, 85vh);
+        position: relative;
+        margin-inline: auto;
+        overflow: hidden;
+      }
+      .card {
+        position: absolute;
+        width: var(--card-w);
+        height: var(--card-h);
+        transform-origin: 50% 85%;
+        border-radius: 14px;
+        box-shadow:
+          0 10px 25px rgba(0,0,0,.5),
+          inset 0 0 0 1px rgba(231,195,114,.3);
+        border: 1px solid rgba(231,195,114,.35);
+        overflow: hidden;
+        opacity: 0;
+        transform: translateY(110vh) rotate(0deg);
+        transition: transform .9s cubic-bezier(.2,.8,.2,1), opacity .9s ease;
+        will-change: transform, opacity;
+        background: #20104a;
+      }
+      .card.show {
+        opacity: 1;
+      }
+      /* dorso SVG ocupa toda la carta */
+      .card svg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      /* controles */
+      .panel input[type="range"] {
+        width: 160px;
+      }
+      @media (max-width: 920px){
+        :root { --card-w: 110px; --card-h: 192px; }
+      }
+      @media (max-width: 640px){
+        :root { --card-w: 88px; --card-h: 154px; }
+      }
+    </style>
+  </head>
+  <body class="min-h-screen bg-[#0f0830] text-white">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+      <a href="/" class="text-sm opacity-80 hover:opacity-100">&larr; Volver al hub</a>
+      <div class="panel text-sm bg-white/5 border border-white/10 rounded-xl px-3 py-2 flex items-center gap-4">
+        <div class="flex items-center gap-2">
+          <label for="apertura" class="opacity-80">Apertura U</label>
+          <input id="apertura" type="range" min="60" max="95" step="1" value="80" />
+        </div>
+        <button id="replay" class="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/15 border border-white/15">Reiniciar entrada</button>
+      </div>
+    </div>
+
+    <div id="root"></div>
+
+    <!-- React + ReactDOM + Babel -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script type="text/babel" data-presets="react">
+      const { useEffect, useMemo, useRef, useState } = React;
+
+      // Dorso vectorial estilo tarot (luna mística en trazo, sin redes)
+      const Back = () => (
+        <svg viewBox="0 0 100 160" aria-hidden>
+          <defs>
+            <radialGradient id="g" cx="50%" cy="20%" r="80%">
+              <stop offset="0%" stopColor="#3a1e73"/><stop offset="65%" stopColor="#2a105a"/><stop offset="100%" stopColor="#160a34"/>
+            </radialGradient>
+          </defs>
+          <rect x="0" y="0" width="100" height="160" rx="12" fill="url(#g)"/>
+          <path d="M0,114 Q50,78 100,114" fill="none" stroke="#6d4ad1" stroke-opacity=".35" stroke-width="0.8"/>
+          <path d="M0,124 Q50,88 100,124" fill="none" stroke="#6d4ad1" stroke-opacity=".3" stroke-width="0.7"/>
+          <path d="M0,134 Q50,98 100,134" fill="none" stroke="#6d4ad1" stroke-opacity=".25" stroke-width="0.6"/>
+          <rect x="1.4" y="1.4" width="97.2" height="157.2" rx="4" fill="none" stroke="#e7c372" stroke-opacity=".5" stroke-width="0.9"/>
+          <!-- Luna mística con rayos y cara simple (solo líneas) -->
+          <g stroke="#e7c372" fill="none" stroke-width="1">
+            <circle cx="50" cy="80" r="20"/>
+            <path d="M60 60 A20 20 0 1 1 60 100 A16 20 0 1 0 60 60" />
+            <path d="M46 75 q2 -2 4 0" /> <!-- ceja -->
+            <path d="M46 85 q2 2 4 0" />   <!-- boca -->
+            <circle cx="50" cy="80" r="1.5" fill="#e7c372" stroke="none"/> <!-- ojo -->
+            <path d="M52 79 q1 1 0 2" />  <!-- nariz -->
+            <!-- rayos -->
+            {
+              Array.from({length:24}).map((_,i)=>{
+                const a = (i*15)*Math.PI/180;
+                const x1 = 50 + 22*Math.cos(a);
+                const y1 = 80 + 22*Math.sin(a);
+                const x2 = 50 + 28*Math.cos(a);
+                const y2 = 80 + 28*Math.sin(a);
+                return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} />
+              })
+            }
+          </g>
+        </svg>
+      );
+
+      function computeULayout(count, W, H, aperturaPct=80){
+        // aperturaPct: 60 (más cerrada) .. 95 (más abierta)
+        const cx = W/2, cy = H*0.48;
+        const radiusX = (W/2) * (aperturaPct/100);
+        const radiusY = H * 0.52;
+        const out = [];
+        for(let i=0;i<count;i++){
+          const t = i/(count-1);     // 0..1
+          const ang = Math.PI - t*Math.PI; // 180°..0°
+          const x  = cx + radiusX * Math.cos(ang);
+          const y  = cy + radiusY * Math.sin(ang);
+          let rot  = (ang*180/Math.PI) - 90; // tangente
+          out.push({ left: x, top: y, rot });
+        }
+        return out;
+      }
+
+      function TarotU(){
+        const STAGE_W = Math.min(1280, window.innerWidth*0.95);
+        const STAGE_H = Math.min(720,  window.innerHeight*0.85);
+        const COUNT = 22;
+
+        const [apertura, setApertura] = useState(80);
+        const [run, setRun] = useState(0); // para re-reproducir entrada
+
+        const layout = useMemo(()=>computeULayout(COUNT, STAGE_W, STAGE_H, apertura), [COUNT, STAGE_W, STAGE_H, apertura]);
+        const cardRefs = useRef([]);
+
+        useEffect(()=>{
+          // stagger entrada
+          cardRefs.current.forEach((el,i)=>{
+            if(!el) return;
+            el.classList.remove('show');
+            // set transform objetivo ahora
+            const {left, top, rot} = layout[i];
+            el.style.left = (left - el.offsetWidth/2) + 'px';
+            el.style.top  = (top  - el.offsetHeight/2) + 'px';
+            el.style.transform = `translateY(110vh) rotate(${rot-20}deg)`; // preparación
+          });
+          // siguiente frame: animar a destino
+          requestAnimationFrame(()=>{
+            cardRefs.current.forEach((el,i)=>{
+              if(!el) return;
+              const {rot} = layout[i];
+              setTimeout(()=>{
+                el.classList.add('show');
+                el.style.transform = `translateY(0) rotate(${rot}deg)`;
+              }, i*90); // stagger ~0.09s
+            });
+          });
+        }, [layout, run]);
+
+        useEffect(()=>{
+          const r = document.getElementById('replay');
+          const a = document.getElementById('apertura');
+          if(r) r.onclick = ()=> setRun(v=>v+1);
+          if(a) a.oninput = (e)=> setApertura(parseInt(e.target.value,10));
+        }, []);
+
+        return (
+          <div className="stage mx-auto rounded-2xl border border-white/10 bg-gradient-to-b from-[#1a0a3f] to-[#0c0622]">
+            {Array.from({length: COUNT}).map((_,i)=>(
+              <div
+                key={`${i}-${run}-${apertura}`}
+                className="card select-none"
+                ref={el => cardRefs.current[i]=el}
+              >
+                <Back/>
+              </div>
+            ))}
+          </div>
+        );
+      }
+
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(<TarotU/>);
+    </script>
+  </body>
+</html>
