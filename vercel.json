@@ -1,5 +1,6 @@
 {
   "builds": [
+    { "src": "public/(.*)", "use": "@vercel/static" },
     { "src": "index.html", "use": "@vercel/static" },
     { "src": "tempochat.html", "use": "@vercel/static" },
     { "src": "tarot.html", "use": "@vercel/static" },
@@ -7,6 +8,7 @@
   ],
   "routes": [
     { "src": "/api/(.*)", "dest": "/api/$1.js" },
+    { "handle": "filesystem" },
     { "src": "/tempochat", "dest": "/tempochat.html" },
     { "src": "/tarot", "dest": "/tarot.html" },
     { "src": "/(.*)", "dest": "/index.html" }
