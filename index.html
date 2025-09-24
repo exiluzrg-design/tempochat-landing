@@ -18,16 +18,16 @@
     <style>
       /* Alturas estables en móvil (evita saltos por barra de direcciones) */
       :root { --vh: 1vh; }
-      html, body, #root { height: auto; min-height: calc(var(--vh) * 100); margin: 0; padding: 0; }
+      html, body, #root { height: 100%; margin: 0; padding: 0; }
       body { display: flex; flex-direction: column; overscroll-behavior: none; }
-      .min-h-mobile { min-height: calc(var(--vh) * 100); }
 
-      /* Preferir svh (view height estable), luego dvh como fallback */
+      /* Forzamos contenedor principal a altura exacta del viewport */
+      .h-mobile-full { height: calc(var(--vh) * 100); }
       @supports (height: 100svh) {
-        html, body, #root, .min-h-mobile { min-height: 100svh; }
+        .h-mobile-full { height: 100svh; }
       }
       @supports (height: 100dvh) {
-        html, body, #root, .min-h-mobile { min-height: 100dvh; }
+        .h-mobile-full { height: 100dvh; }
       }
 
       /* ====== Efecto: brillo diagonal (solo desktop) ====== */
@@ -58,8 +58,8 @@
       }
     </style>
   </head>
-  <body class="min-h-mobile">
-    <div id="root" class="flex flex-col min-h-mobile"></div>
+  <body class="h-mobile-full">
+    <div id="root" class="flex flex-col h-mobile-full"></div>
 
     <script>
       // Fix de viewport en móviles: calcular 1 sola vez (y al rotar) para evitar saltos al hacer scroll
@@ -160,7 +160,7 @@
           }
         ];
 
-        return e('div', {className:'flex flex-col min-h-full w-full text-white overflow-hidden relative', style:{background:'radial-gradient(1200px 800px at 50% 10%, #5b3ef1 0%, #2b186e 40%, #0f0830 100%)'}}, [
+        return e('div', {className:'flex flex-col h-mobile-full w-full text-white overflow-hidden relative', style:{background:'radial-gradient(1200px 800px at 50% 10%, #5b3ef1 0%, #2b186e 40%, #0f0830 100%)'}}, [
           e('div', {className:'pointer-events-none absolute -top-24 -left-24 w-80 h-80 rounded-full bg-violet-500/20 blur-3xl'}),
           e('div', {className:'pointer-events-none absolute -bottom-24 -right-24 w-80 h-80 rounded-full bg-indigo-400/20 blur-3xl'}),
 
@@ -174,8 +174,7 @@
             e('a', {href:'#contacto', className:'text-sm opacity-80 hover:opacity-100'}, 'Contacto')
           ]),
 
-          /* Hero (sube automáticamente en pantallas bajas) */
-          e('div', {className:'max-w-6xl mx-auto px-4 pt-8 pb-4 flex-grow short-mt-auto'}, [
+          e('div', {className:'max-w-6xl mx-auto px-4 pt-8 pb-4 short-mt-auto'}, [
             e('h1', {className:'text-3xl md:text-5xl font-bold leading-tight'}, [
               'Charlas privadas y experiencias místicas.',
               e('br', {className:'hidden md:block'}),
@@ -184,8 +183,7 @@
             e('p', {className:'mt-3 text-white/80 max-w-2xl'}, 'Un puente entre la intimidad de la charla y la sabiduría del Tarot')
           ]),
 
-          /* Tarjetas (bajan automáticamente en pantallas bajas) */
-          e('div', {className:'max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-2 gap-6 flex-grow short-mb-auto'},
+          e('div', {className:'max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-2 gap-6 short-mb-auto'},
             cards.map(c => e(Card, c))
           ),
 
