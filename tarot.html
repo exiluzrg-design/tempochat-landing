@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Tarot IA — BigFont + Sigil Blur</title>
+  <title>Tarot IA — BigFont + Sigil Blur (Tight)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
@@ -83,7 +83,8 @@
     const deg=r=>r*180/Math.PI;
     function computeFanLayout(stageW, stageH, cardW, cardH, total=22, bp='desktop'){
       const cx=stageW/2;const r=stageW/2.2;const cy=stageH*0.32+r;
-      const spanDeg= bp==='mobile'?160: bp==='tablet'?190:210;const span=spanDeg*Math.PI/180;
+      const spanDeg = bp==='mobile'?120: bp==='tablet'?150:180; // <-- menos separación
+      const span=spanDeg*Math.PI/180;
       const phiCenter=3*Math.PI/2;const N=bp==='mobile'?9:total;const res=[];
       for(let i=0;i<N;i++){const t=i/(N-1);const phi=phiCenter+span/2-t*span;
         const x=cx+r*Math.cos(phi);const y=cy+r*Math.sin(phi);
