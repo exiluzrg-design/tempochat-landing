@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Tarot IA — Edge Hug + Chat Interior U</title>
+  <title>Tarot IA — Edge Hug + Chat Interior U (Desktop más angosto / Mobile protagonista)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
@@ -82,14 +82,27 @@
     .sigil .tw1{ animation-delay: .3s; } .sigil .tw2{ animation-delay: 1.2s; }
     @keyframes twinkle { 0%{ opacity: .35; } 100%{ opacity: 1; } }
 
-    /* Chat más angosto (interior de la U) */
+    /* Chat más angosto (interior de la U) — ajustes pedidos */
     .chat-wrap{
       position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
-      width:min(680px, 70vw); /* << aquí lo achicamos para no tocar cartas */
+      width:min(560px, 52vw); /* DESKTOP: más angosto que antes para no rozar cartas */
       z-index:22; opacity:0;
       animation: chatIn .8s ease forwards;
       font-family:'Cinzel Decorative', cursive;
     }
+    /* TABLET: un poco más ancho que desktop, pero controlado */
+    @media (max-width:920px){
+      .chat-wrap{ width:min(720px, 80vw); }
+    }
+    /* MOBILE: darle protagonismo (más ancho) */
+    @media (max-width:640px){
+      .chat-wrap{ width:92vw; }
+      .messages{ max-height:min(56vh, 460px); }
+      .input-row{ flex-direction:column; align-items:stretch; gap:8px; }
+      .input-row textarea{ height:64px; }
+      .input-row button{ width:100%; height:52px; }
+    }
+
     @keyframes chatIn { 0%{opacity:0; transform:translate(-50%,-52%);} 100%{opacity:1; transform:translate(-50%,-50%);} }
     .chat-pane{
       background: radial-gradient(120% 160% at 50% 0%, rgba(44,21,93,.4) 0%, rgba(22,10,48,.32) 60%, rgba(12,5,28,.26) 100%);
