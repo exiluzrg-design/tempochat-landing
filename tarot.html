@@ -4,9 +4,7 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Tarot IA — Repo Safe</title>
-  <script>
-    tailwind = { config: { corePlugins: { preflight: false } } };
-  </script>
+  <script>tailwind = { config: { corePlugins: { preflight: false } } };</script>
   <script src="https://cdn.tailwindcss.com/3.4.10"></script>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&display=swap" rel="stylesheet">
   <style>
@@ -16,7 +14,6 @@
       color:#fff; overflow:hidden;
       -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
     }
-    /* --- Sandbox wrapper to resist repo/global CSS --- */
     .tarot-root, .tarot-root * { box-sizing: border-box; }
     .tarot-root { font-size: 16px; line-height: 1.4; }
 
@@ -35,12 +32,10 @@
       box-shadow:0 10px 25px rgba(0,0,0,.5), inset 0 0 0 1px #6d4ad140;
       transform-origin:50% 85%;
       opacity:0; transform:translateY(110vh) rotate(0deg);
-      transition: transform .9s cubic-bezier(.2,.8,.2,1), opacity .9s cubic-bezier(.2,.8,.2,1);
+      transition: transform .9s cubic-bezier(.2,.8,.2,1), opacity .9s cubic-bezier(.2,.8,.2,1), filter .35s ease;
       will-change: transform, opacity;
     }
     .card.show{ opacity:1; }
-
-    /* Light sweep — run once only when card shows */
     .card.show::after{
       content:""; position:absolute; inset:0;
       background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.28) 50%, transparent 65%);
@@ -49,56 +44,46 @@
       mix-blend-mode: screen; pointer-events:none;
     }
     @keyframes sheen{
-      0%   { transform: translateX(-120%); }
-      38%  { transform: translateX(120%); }
-      100% { transform: translateX(120%); }
+      0% { transform: translateX(-120%); }
+      38% { transform: translateX(120%); }
+      100%{ transform: translateX(120%); }
     }
     .card svg{ position:absolute; inset:0; width:100%; height:100%; display:block; }
 
     @media (max-width:920px){ :root{ --card-w:110px; --card-h:192px; } }
     @media (max-width:640px){ :root{ --card-w:104px; --card-h:182px; } }
 
-    /* Blur + dialog fade (slow, synchronized) */
-    .stage .card{ transition: transform .9s cubic-bezier(.2,.8,.2,1), opacity .9s cubic-bezier(.2,.8,.2,1), filter 1.2s ease; }
+    /* Blur + dialog fade */
     .soft-dialog{ opacity:0; transition: opacity 2.2s ease; }
     .stage.show-dialog .soft-dialog{ opacity:1; }
     .stage.show-dialog .card{ filter: blur(2px) brightness(.86); }
 
-    /* Dialog: transparent, no border/shadow, big mystical font */
+    /* Diálogo */
     .soft-dialog{
       position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
       width:min(800px, 90vw);
-      padding:32px 36px;
-      border-radius:18px;
+      padding:32px 36px; border-radius:18px;
       background:transparent; border:none; box-shadow:none;
-      color:#f5ecff;
+      color:#f5ecff; z-index:20;
       font-family:'Cinzel Decorative', cursive;
       font-size: clamp(24px, 2rem, 40px);
       line-height:1.5; text-align:center;
-      z-index:20;
     }
     .soft-dialog .text{ margin-top:14px; font-size: clamp(18px, 1.4rem, 28px); opacity:.95; }
 
-    /* Desktop-only tweaks: centrar diálogo sobre cartas y subir tipografías */
+    /* Desktop-only: subir leve el diálogo y agrandar tipografías */
     @media (min-width: 921px){
-      .soft-dialog{
-        top: 44%; /* baja un poco para quedar más encima del abanico */
-        font-size: clamp(28px, 2.4rem, 46px);
-      }
-      .soft-dialog .text{
-        font-size: clamp(20px, 1.6rem, 32px);
-      }
+      .soft-dialog{ top: 44%; font-size: clamp(28px, 2.4rem, 46px); }
+      .soft-dialog .text{ font-size: clamp(20px, 1.6rem, 32px); }
     }
 
-    /* Sigil visuals */
+    /* Sigilo */
     .soft-dialog .sigil-wrap{ display:flex; justify-content:center; margin-bottom:14px; }
     .soft-dialog svg.sigil{ width: min(360px, 80%); height:auto; display:block; }
     .soft-dialog .gold{ stroke:#e7c372; }
     .soft-dialog .violet{ stroke:#d9c8ff; opacity:.85; }
     .soft-dialog .dot{ fill:#e7c372; }
     .soft-dialog .dash{ stroke-dasharray:4 6; }
-
-    /* Sigil animations */
     .soft-dialog svg.sigil{ animation: float 6s ease-in-out infinite; }
     @keyframes float { 0%{ transform: translateY(0); } 50%{ transform: translateY(-4px); } 100%{ transform: translateY(0); } }
     .sigil .spin{ transform-box: fill-box; transform-origin: 50% 50%; animation: spin 12s linear infinite; }
@@ -107,7 +92,7 @@
     @keyframes spinReverse { from{ transform: rotate(0deg); } to{ transform: rotate(-360deg); } }
     .sigil .twinkle{ animation: twinkle 1.8s ease-in-out infinite alternate; }
     .sigil .tw1{ animation-delay: .2s; } .sigil .tw2{ animation-delay: .9s; }
-    @keyframes twinkle { 0%{ opacity: .35; } 100%{ opacity: 1; } }
+    @keyframes twinkle { 0%{ opacity:.35; } 100%{ opacity:1; } }
   </style>
 </head>
 <body>
@@ -148,39 +133,35 @@
     };
     const deg = r => r * 180 / Math.PI;
 
-    // Wide-edges inverted fan (∩)
+    // FAN ∩ — curva original (span 210°, R base), solo SUBE en desktop
     function computeFanLayout(stageW, stageH, cardW, cardH, total=22, breakpoint='desktop'){
       const cx = stageW / 2;
 
-      // SUBIR CARTAS EN DESKTOP: bajamos el 'cy' (más cerca del borde superior)
+      // Centro vertical: original 0.35 — en desktop lo subimos levemente (0.31)
       const cy =
         breakpoint === 'mobile' ? stageH * 0.35 :
-        breakpoint === 'tablet' ? stageH * 0.33 :
-        stageH * 0.28;  // desktop
+        breakpoint === 'tablet' ? stageH * 0.35 :
+        stageH * 0.31; // desktop (sube sin deformar)
 
-      // Mantener curva amplia; en desktop un pelín más abierta
-      const spanDeg =
-        breakpoint === 'mobile' ? 160 :
-        breakpoint === 'tablet' ? 190 :
-        216; // desktop un poco más
-
+      // Arco original
+      const spanDeg =  breakpoint === 'mobile' ? 160
+                       : breakpoint === 'tablet' ? 190
+                       : 210; // desktop ORIGINAL restaurado
       const span = spanDeg * Math.PI/180;
+
       const phiCenter = 3*Math.PI/2;
       const N = breakpoint === 'mobile' ? 9 : total;
+
+      // Radio original
+      const R = stageW * 0.42;
+      const Ry = stageH * 0.42;
 
       const res = [];
       for(let i=0;i<N;i++){
         const t = N===1 ? 0.5 : i/(N-1);
         const phi = phiCenter + span/2 - t*span;
-
-        // radio acorde a stage; en desktop un poquito mayor para reforzar "subida"
-        const R =
-          breakpoint === 'mobile' ? stageW*0.42 :
-          breakpoint === 'tablet' ? stageW*0.43 :
-          stageW*0.46;
-
-        const x = cx + R * Math.cos(phi);
-        const y = cy + (stageH*0.42) * Math.sin(phi);
+        const x = cx + R  * Math.cos(phi);
+        const y = cy + Ry * Math.sin(phi);
         const rot = deg(phi) + 90;
         res.push({ left: x - cardW/2, top: y - cardH/2, rot });
       }
@@ -271,7 +252,7 @@
                   <line className="violet" strokeWidth="1" x1="110" y1="30" x2="110" y2="80"/>
                   <line className="violet" strokeWidth="1" x1="80" y1="55" x2="140" y2="55"/>
                   <circle className="dot" cx="8" cy="55" r="2.2"/>
-                  <circle className="dot" cx="212" cy="55" r="2.2"/>
+                  <circle className="dot" cx="212" y="55" r="2.2"/>
                   <g className="gold" strokeWidth="1">
                     <path className="twinkle tw1" d="M28 22 l3 6 l6 3 l-6 3 l-3 6 l-3 -6 l-6 -3 l6 -3 z"/>
                     <path className="twinkle tw2" d="M192 20 l2 4 l4 2 l-4 2 l-2 4 l-2 -4 l-4 -2 l4 -2 z"/>
