@@ -3,16 +3,20 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Tarot IA — Edge Hug + Lento + Chat</title>
+  <title>Tarot IA — Edge Hug + Chat Interior U</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&display=swap" rel="stylesheet">
   <style>
-    html, body{height:100%;margin:0;background: radial-gradient(2000px 1400px at 50% 45%, #5f3bb8 0%, #3b1a77 45%, #1a083a 100%);color:#fff;overflow:hidden;}
-    .screen{min-height:100vh;width:100vw;display:flex;align-items:center;justify-content:center;}
-    .stage{width:100vw;height:100vh;position:relative;overflow:hidden;background:transparent;}
+    html, body{
+      height:100%; margin:0;
+      background: radial-gradient(2000px 1400px at 50% 45%, #5f3bb8 0%, #3b1a77 45%, #1a083a 100%);
+      color:#fff; overflow:hidden;
+    }
+    .screen{min-height:100vh; width:100vw; display:flex; align-items:center; justify-content:center;}
+    .stage{width:100vw; height:100vh; position:relative; overflow:hidden; background:transparent;}
 
     :root{ --card-w:128px; --card-h:204px; }
     .card{
@@ -34,7 +38,9 @@
       mix-blend-mode: screen; pointer-events:none;
     }
     @keyframes sheen{ 0%{transform:translateX(-120%);} 100%{transform:translateX(120%);} }
+
     .card svg{ position:absolute; inset:0; width:100%; height:100%; display:block; }
+
     @media (max-width:920px){ :root{ --card-w:110px; --card-h:192px; } }
     @media (max-width:640px){ :root{ --card-w:104px; --card-h:182px; } }
 
@@ -53,7 +59,7 @@
     .stage.show-dialog .soft-dialog{ animation: dialogFadeIn 1.8s ease forwards; }
     .soft-dialog.fade-out{ animation: dialogFadeOut .6s ease forwards; }
 
-    /* Blur de cartas cuando hay ventana o chat */
+    /* Blur cartas cuando hay ventana o chat */
     .stage.show-dialog .card,
     .stage.show-chat .card{ filter: blur(2px) brightness(.86); }
 
@@ -64,6 +70,8 @@
     .soft-dialog .violet{ stroke:#d9c8ff; opacity:.85; }
     .soft-dialog .dot{ fill:#e7c372; }
     .soft-dialog .dash{ stroke-dasharray:4 6; }
+
+    /* Animaciones lentas del sigilo */
     .soft-dialog svg.sigil{ animation: float 10s ease-in-out infinite; }
     @keyframes float { 0%{ transform: translateY(0); } 50%{ transform: translateY(-4px); } 100%{ transform: translateY(0); } }
     .sigil .spin{ transform-box: fill-box; transform-origin: 50% 50%; animation: spin 20s linear infinite; }
@@ -74,10 +82,11 @@
     .sigil .tw1{ animation-delay: .3s; } .sigil .tw2{ animation-delay: 1.2s; }
     @keyframes twinkle { 0%{ opacity: .35; } 100%{ opacity: 1; } }
 
-    /* Chat UI (mismo lugar que el intro) */
+    /* Chat más angosto (interior de la U) */
     .chat-wrap{
       position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
-      width:min(880px, 92vw); z-index:22; opacity:0;
+      width:min(680px, 70vw); /* << aquí lo achicamos para no tocar cartas */
+      z-index:22; opacity:0;
       animation: chatIn .8s ease forwards;
       font-family:'Cinzel Decorative', cursive;
     }
@@ -105,9 +114,7 @@
     }
     .bubble.bot{ align-self:flex-start; }
     .bubble.user{ align-self:flex-end; background: rgba(109,74,209,.35); }
-    .input-row{
-      margin-top:12px; display:flex; gap:10px; align-items:center;
-    }
+    .input-row{ margin-top:12px; display:flex; gap:10px; align-items:center; }
     .input-row textarea{
       flex:1; resize:none; height:56px;
       background: rgba(12,5,28,.5); color:#f5ecff;
@@ -159,7 +166,7 @@
       const padBottom = Math.max(12, cardH*0.22);
 
       const cx = stageW / 2;
-      const spanDeg = bp==='mobile'?120 : bp==='tablet'?150 : 180;
+      const spanDeg = bp==='mobile'?120 : bp==='tablet'?150 : 180; // separación aprobada
       const span = spanDeg * Math.PI/180;
       const phiCenter = 3*Math.PI/2;
       const N = bp==='mobile' ? 9 : total;
@@ -188,6 +195,7 @@
       const stageRef=useRef(null);
       const {w:vw,h:vh}=useWindowSize();
       const [run,setRun]=useState(0);
+
       const [showDialog,setShowDialog]=useState(false);
       const [dialogFadeOut,setDialogFadeOut]=useState(false);
       const [showChat,setShowChat]=useState(false);
@@ -215,7 +223,7 @@
 
       const refs=useRef([]);
 
-      // Animación de entrada (lenta)
+      // Entrada lenta de cartas
       useEffect(()=>{
         refs.current.forEach((el,i)=>{
           if(!el) return;
@@ -234,13 +242,13 @@
               setTimeout(()=>{
                 el.classList.add('show');
                 el.style.transform = `translateY(0) rotate(${rot}deg)`;
-              }, i*160);
+              }, i*160); // staggering más lento
             });
           });
         });
       }, [layout, run]);
 
-      // Mostrar intro (sigilo + texto) cuando terminan las cartas
+      // Mostrar intro (sigilo + texto)
       useEffect(()=>{
         setShowDialog(false);
         setDialogFadeOut(false);
@@ -253,19 +261,19 @@
         return ()=> clearTimeout(t);
       }, [layout, run]);
 
-      // 2s después de mostrarse la intro, fade-out y aparece el chat
+      // A los 2s, desvanecer intro y mostrar chat
       useEffect(()=>{
         if(!showDialog) return;
-        const t1 = setTimeout(()=> setDialogFadeOut(true), 2000);   // empieza a desvanecer a los 2s
+        const t1 = setTimeout(()=> setDialogFadeOut(true), 2000);
         const t2 = setTimeout(()=>{
           setShowDialog(false);
           setDialogFadeOut(false);
           setShowChat(true);
-        }, 2600); // 600 ms de fade-out, luego mostrar chat
+        }, 2600); // 600 ms de fade-out
         return ()=> { clearTimeout(t1); clearTimeout(t2); };
       }, [showDialog]);
 
-      // Click para re-correr animación si querés
+      // Click para re-correr todo
       useEffect(()=>{
         const handler=()=> setRun(v=>v+1);
         document.addEventListener('click', handler);
@@ -308,7 +316,7 @@
             </div>
           )}
 
-          {/* Chat en el mismo lugar */}
+          {/* Chat (interior de la U) */}
           {showChat && (
             <div className="chat-wrap">
               <div className="chat-pane">
@@ -325,7 +333,6 @@
                     const u=document.createElement('div');
                     u.className='bubble user'; u.textContent=txt; box.appendChild(u);
                     ta.value='';
-                    // Respuesta placeholder
                     setTimeout(()=>{
                       const b=document.createElement('div');
                       b.className='bubble bot';
