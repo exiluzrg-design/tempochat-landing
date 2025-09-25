@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Tarot IA — Movimientos Lentos</title>
+  <title>Tarot IA — Movimientos Lentos Edge Hug</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
@@ -12,7 +12,7 @@
   <style>
     html, body{height:100%;margin:0;background: radial-gradient(2000px 1400px at 50% 45%, #5f3bb8 0%, #3b1a77 45%, #1a083a 100%);color:#fff;overflow:hidden;}
     .screen{min-height:100vh;width:100vw;display:flex;align-items:center;justify-content:center;}
-    .stage{width:min(1280px,95vw);height:min(720px,90vh);position:relative;overflow:hidden;background:transparent;}
+    .stage{width:100vw;height:100vh;position:relative;overflow:hidden;background:transparent;}
 
     :root{ --card-w:128px; --card-h:204px; }
     .card{
@@ -22,13 +22,11 @@
       box-shadow:0 10px 25px rgba(0,0,0,.5), inset 0 0 0 1px #6d4ad140;
       transform-origin:50% 85%;
       opacity:0; transform:translateY(110vh) rotate(0deg);
-      /* más lento */
       transition: transform 1.6s cubic-bezier(.2,.8,.2,1), opacity 1.6s cubic-bezier(.2,.8,.2,1), filter .5s ease;
       will-change: transform, opacity, filter;
     }
     .card.show{ opacity:1; }
 
-    /* sheen una sola vez, más lento */
     .card.show::after{
       content:""; position:absolute; inset:0;
       background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.28) 50%, transparent 65%);
@@ -36,17 +34,13 @@
       animation: sheen 5s ease-in-out 1;
       mix-blend-mode: screen; pointer-events:none;
     }
-    @keyframes sheen{
-      0%   { transform: translateX(-120%); }
-      100% { transform: translateX(120%); }
-    }
+    @keyframes sheen{ 0%{transform:translateX(-120%);} 100%{transform:translateX(120%);} }
 
     .card svg{ position:absolute; inset:0; width:100%; height:100%; display:block; }
 
     @media (max-width:920px){ :root{ --card-w:110px; --card-h:192px; } }
     @media (max-width:640px){ :root{ --card-w:104px; --card-h:182px; } }
 
-    /* Ventana: transparencia total, tipografía mística */
     .soft-dialog{
       position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
       width:min(800px, 90vw); padding:32px 36px;
@@ -58,14 +52,11 @@
     }
     .soft-dialog .text{ margin-top:14px; font-size:clamp(20px, 2.4vw, 28px); opacity:.95; }
 
-    /* Aparición lenta de la ventana */
     @keyframes dialogFade { 0%{opacity:0;} 100%{opacity:1;} }
     .stage.show-dialog .soft-dialog{ animation: dialogFade 1.8s ease forwards; }
 
-    /* Blur de cartas cuando aparece la ventana (suave) */
     .stage.show-dialog .card{ filter: blur(2px) brightness(.86); }
 
-    /* Sigilo (ojo) */
     .soft-dialog .sigil-wrap{ display:flex; justify-content:center; margin-bottom:14px; }
     .soft-dialog svg.sigil{ width:min(360px, 70vw); height:auto; display:block; }
     .soft-dialog .gold{ stroke:#e7c372; }
@@ -73,7 +64,6 @@
     .soft-dialog .dot{ fill:#e7c372; }
     .soft-dialog .dash{ stroke-dasharray:4 6; }
 
-    /* Animaciones más lentas del sigilo */
     .soft-dialog svg.sigil{ animation: float 10s ease-in-out infinite; }
     @keyframes float { 0%{ transform: translateY(0); } 50%{ transform: translateY(-4px); } 100%{ transform: translateY(0); } }
     .sigil .spin{ transform-box: fill-box; transform-origin: 50% 50%; animation: spin 20s linear infinite; }
@@ -114,13 +104,26 @@
     };
     const deg = r => r * 180 / Math.PI;
 
-    /* Mantengo la separación (apertura) previa: desktop 180°, tablet 150°, mobile 120° */
     function computeFanLayout(stageW, stageH, cardW, cardH, total=22, bp='desktop'){
-      const cx=stageW/2; const r=stageW/2.2; const cy=stageH*0.32 + r;
-      const spanDeg = bp==='mobile'?120 : bp==='tablet'?150 : 180;   // <— misma separación
+      const padX = Math.max(6, cardW*0.08);
+      const padTop = Math.max(8, cardH*0.18);
+      const padBottom = Math.max(12, cardH*0.22);
+
+      const cx = stageW / 2;
+      const spanDeg = bp==='mobile'?120 : bp==='tablet'?150 : 180;
       const span = spanDeg * Math.PI/180;
       const phiCenter = 3*Math.PI/2;
       const N = bp==='mobile' ? 9 : total;
+
+      const rMaxW = (stageW/2) - padX - cardW/2;
+      const rMaxH = ((stageH - padTop - padBottom) / 2);
+      const r = Math.max(Math.min(rMaxW, rMaxH), cardH*1.1);
+
+      const cyTarget = stageH*0.30 + r;
+      const cyMin = padTop + cardH/2 + r;
+      const cyMax = stageH - padBottom - cardH/2 - r;
+      const cy = Math.max(cyMin, Math.min(cyTarget, cyMax));
+
       const res=[];
       for(let i=0;i<N;i++){
         const t = i/(N-1);
@@ -140,10 +143,7 @@
 
       const readVars = () => {
         const cs = getComputedStyle(document.documentElement);
-        return {
-          w: parseFloat(cs.getPropertyValue('--card-w')),
-          h: parseFloat(cs.getPropertyValue('--card-h')),
-        };
+        return { w: parseFloat(cs.getPropertyValue('--card-w')), h: parseFloat(cs.getPropertyValue('--card-h')) };
       };
       const [cardVars,setCardVars]=useState(readVars());
       useEffect(()=>{ setCardVars(readVars()); }, [vw,vh]);
@@ -164,7 +164,6 @@
 
       const refs=useRef([]);
 
-      /* Entrada más lenta: stagger y duración mayores */
       useEffect(()=>{
         refs.current.forEach((el,i)=>{
           if(!el) return;
@@ -183,19 +182,18 @@
               setTimeout(()=>{
                 el.classList.add('show');
                 el.style.transform = `translateY(0) rotate(${rot}deg)`;
-              }, i*160); // antes 85ms — ahora más lento
+              }, i*160);
             });
           });
         });
       }, [layout, run]);
 
-      /* Mostrar ventana luego de TODAS las cartas — delay acorde a la nueva velocidad */
       useEffect(()=>{
         setShowDialog(false);
         const N = layout.length;
-        const stagger = 160;   // antes 85
-        const animDur = 1600;  // ms; empata transition de .card
-        const delay = (N-1)*stagger + animDur + 1000; // colchón más amplio
+        const stagger = 160;
+        const animDur = 1600;
+        const delay = (N-1)*stagger + animDur + 1000;
         const t = setTimeout(()=> setShowDialog(true), delay);
         return ()=> clearTimeout(t);
       }, [layout, run]);
