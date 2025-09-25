@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Tarot IA — Secuencia + Ojo Animado + Chat Ajustado (FIX JSX)</title>
+  <title>Tarot IA — Secuencia + Ojo Animado + Chat (delays 1s)</title>
 
   <!-- Libs -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -265,19 +265,19 @@
         });
       }, [layout, run]);
 
-      /* Mostrar ventana (ojo) al terminar cartas */
+      /* Mostrar ventana (ojo) al terminar cartas – con 1s de demora extra */
       useEffect(()=>{
         setShowDialog(false); setDialogFadeOut(false); setShowChat(false);
         const delay = (layout.length-1)*160 + 1600 + 1000;
-        const t = setTimeout(()=> setShowDialog(true), delay);
+        const t = setTimeout(()=> setShowDialog(true), delay + 1000); // +1s
         return ()=> clearTimeout(t);
       }, [layout, run]);
 
-      /* Desvanecer ventana y mostrar chat */
+      /* Desvanecer ventana y mostrar chat – agregar 1s extra antes del chat */
       useEffect(()=>{
         if(!showDialog) return;
         const t1 = setTimeout(()=> setDialogFadeOut(true), 2000);
-        const t2 = setTimeout(()=>{ setShowDialog(false); setDialogFadeOut(false); setShowChat(true); }, 2600);
+        const t2 = setTimeout(()=>{ setShowDialog(false); setDialogFadeOut(false); setShowChat(true); }, 3600); // 2600 -> 3600 (+1s)
         return ()=> { clearTimeout(t1); clearTimeout(t2); };
       }, [showDialog]);
 
@@ -296,7 +296,7 @@
             </div>
           ))}
 
-          {/* Ventana con OJO ANIMADO (JSX comments ok) */}
+          {/* Ventana con OJO ANIMADO */}
           {showDialog && (
             <div className={`soft-dialog ${dialogFadeOut ? "fade-out" : ""}`}>
               <div className="sigil-wrap">
