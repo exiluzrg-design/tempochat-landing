@@ -3,13 +3,17 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Tarot IA — Secuencia + Ojo Animado + Chat Ajustado</title>
+  <title>Tarot IA — Secuencia + Ojo Animado + Chat Ajustado (FIX JSX)</title>
+
+  <!-- Libs -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
   <!-- Tipografías intermedias -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Marcellus&display=swap" rel="stylesheet">
+
   <style>
     html, body{
       height:100%; margin:0;
@@ -46,7 +50,7 @@
     @media (max-width:920px){ :root{ --card-w:110px; --card-h:192px; } }
     @media (max-width:640px){ :root{ --card-w:104px; --card-h:182px; } }
 
-    /* Ventana de bienvenida con OJO ANIMADO restaurado */
+    /* Ventana de bienvenida con OJO ANIMADO */
     .soft-dialog{
       position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
       width:min(800px, 90vw); padding:32px 36px;
@@ -158,6 +162,7 @@
   <script type="text/babel" data-presets="react">
     const { useEffect, useMemo, useRef, useState } = React;
 
+    /* Dorso simple */
     const Back = () => (
       <svg viewBox="0 0 100 160" aria-hidden>
         <defs>
@@ -168,13 +173,13 @@
         <rect x="0" y="0" width="100" height="160" rx="10" fill="url(#g)"/>
       </svg>
     );
-
     const CardBack = () => (
       <div className="absolute inset-0 rounded-xl overflow-hidden" style={{border:'1px solid #e7c37255'}}>
         <Back/>
       </div>
     );
 
+    /* Helpers */
     const useWindowSize = () => {
       const [s,setS]=useState({w: innerWidth, h: innerHeight});
       useEffect(()=>{ const f=()=> setS({w: innerWidth, h: innerHeight}); addEventListener('resize', f); return ()=> removeEventListener('resize', f); },[]);
@@ -182,6 +187,7 @@
     };
     const deg = r => r * 180 / Math.PI;
 
+    /* Layout: U hacia arriba, abanico geométrico */
     function computeFanLayout(stageW, stageH, cardW, cardH, total=22, bp='desktop'){
       const padX = Math.max(6, cardW*0.08);
       const padTop = Math.max(8, cardH*0.18);
@@ -190,7 +196,7 @@
       const cx = stageW / 2;
       const spanDeg = bp==='mobile'?120 : bp==='tablet'?150 : 180;
       const span = spanDeg * Math.PI/180;
-      const phiCenter = 3*Math.PI/2; // U hacia arriba (mínimo abajo)
+      const phiCenter = 3*Math.PI/2; // mínimo abajo
       const N = bp==='mobile' ? 9 : total;
 
       const rMaxW = (stageW/2) - padX - cardW/2;
@@ -214,7 +220,6 @@
     }
 
     function TarotFan(){
-      const stageRef=useRef(null);
       const {w:vw,h:vh}=useWindowSize();
       const [run,setRun]=useState(0);
       const [showDialog,setShowDialog]=useState(false);
@@ -228,23 +233,15 @@
       const [cardVars,setCardVars]=useState(readVars());
       useEffect(()=>{ setCardVars(readVars()); }, [vw,vh]);
 
-      const getStage = ()=>{
-        const el=stageRef.current;
-        if(!el) return {stageW:1280, stageH:720};
-        const r=el.getBoundingClientRect();
-        return {stageW:r.width, stageH:r.height};
-      };
-      const {stageW,stageH}=useMemo(getStage, [stageRef.current, vw, vh, run]);
-      const bp = stageW < 640 ? 'mobile' : stageW < 920 ? 'tablet' : 'desktop';
-
+      const bp = vw < 640 ? 'mobile' : vw < 920 ? 'tablet' : 'desktop';
       const layout = useMemo(
-        ()=>computeFanLayout(stageW, stageH, cardVars.w, cardVars.h, 22, bp),
-        [stageW, stageH, cardVars.w, cardVars.h, bp]
+        ()=>computeFanLayout(vw, vh, cardVars.w, cardVars.h, 22, bp),
+        [vw, vh, cardVars.w, cardVars.h, bp]
       );
 
       const refs=useRef([]);
 
-      // Entrada de cartas
+      /* Entrada de cartas */
       useEffect(()=>{
         refs.current.forEach((el,i)=>{
           if(!el) return;
@@ -268,7 +265,7 @@
         });
       }, [layout, run]);
 
-      // Mostrar ventana (con ojo) al finalizar cartas
+      /* Mostrar ventana (ojo) al terminar cartas */
       useEffect(()=>{
         setShowDialog(false); setDialogFadeOut(false); setShowChat(false);
         const delay = (layout.length-1)*160 + 1600 + 1000;
@@ -276,7 +273,7 @@
         return ()=> clearTimeout(t);
       }, [layout, run]);
 
-      // Desvanecer ventana y mostrar chat
+      /* Desvanecer ventana y mostrar chat */
       useEffect(()=>{
         if(!showDialog) return;
         const t1 = setTimeout(()=> setDialogFadeOut(true), 2000);
@@ -284,7 +281,7 @@
         return ()=> { clearTimeout(t1); clearTimeout(t2); };
       }, [showDialog]);
 
-      // Click para re-correr la secuencia
+      /* Click para re-correr la secuencia */
       useEffect(()=>{
         const handler=()=> setRun(v=>v+1);
         document.addEventListener('click', handler);
@@ -292,33 +289,33 @@
       }, []);
 
       return (
-        <div ref={stageRef} className={`stage ${(showDialog||showChat) ? "show-dialog show-chat" : ""}`}>
+        <div className={`stage ${(showDialog||showChat) ? "show-dialog show-chat" : ""}`}>
           {layout.map((pos,i)=>(
             <div key={i+'-'+run} ref={el=>refs.current[i]=el} className="card" style={{left:pos.left, top:pos.top, transform:`rotate(${pos.rot}deg)`}}>
               <CardBack/>
             </div>
           ))}
 
-          {/* VENTANA CON OJO ANIMADO RESTAURADO */}
+          {/* Ventana con OJO ANIMADO (JSX comments ok) */}
           {showDialog && (
             <div className={`soft-dialog ${dialogFadeOut ? "fade-out" : ""}`}>
               <div className="sigil-wrap">
                 <svg className="sigil" viewBox="0 0 220 110" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-                  <!-- contorno ojo -->
+                  {/* contorno ojo */}
                   <path className="violet" strokeWidth="1.2" d="M5 55 C35 15, 85 5, 110 5 C135 5, 185 15, 215 55 C185 95, 135 105, 110 105 C85 105, 35 95, 5 55 Z"/>
-                  <!-- extremos -->
+                  {/* extremos */}
                   <circle className="gold" strokeWidth="1.4" cx="32" cy="55" r="10"/>
                   <circle className="gold" strokeWidth="1.4" cx="188" cy="55" r="10"/>
                   <line className="gold" strokeWidth="1.1" x1="42" y1="55" x2="178" y2="55"/>
-                  <!-- pupila / iris -->
+                  {/* pupila / iris */}
                   <circle className="violet" strokeWidth="1" cx="110" cy="55" r="26"/>
                   <circle className="gold dash spin" strokeWidth="1" cx="110" cy="55" r="22"/>
                   <polygon className="gold spin-rev" strokeWidth="1.6" fill="none"
                     points="110,35 118,49 134,52 121,63 124,79 110,71 96,79 99,63 86,52 102,49"/>
-                  <!-- cruces -->
+                  {/* cruces */}
                   <line className="violet" strokeWidth="1" x1="110" y1="30" x2="110" y2="80"/>
                   <line className="violet" strokeWidth="1" x1="80" y1="55" x2="140" y2="55"/>
-                  <!-- chispas -->
+                  {/* chispas */}
                   <circle className="dot" cx="8" cy="55" r="2.2"/>
                   <circle className="dot" cx="212" cy="55" r="2.2"/>
                   <g className="gold" strokeWidth="1">
@@ -332,7 +329,7 @@
             </div>
           )}
 
-          {/* CHAT */}
+          {/* Chat */}
           {showChat && (
             <div className="chat-wrap">
               <div className="chat-pane">
