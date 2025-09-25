@@ -109,9 +109,6 @@
 
       /* En mobile las cartas NO tienen blur cuando aparece la ventana */
       .stage.show-dialog .card{ filter:none !important; }
-
-      /* Opcional: permitimos un pelín de desborde interno del contenedor de escena si hace falta */
-      .stage{ overflow:visible; }
     }
   </style>
 </head>
@@ -135,38 +132,22 @@
     const useWindowSize=()=>{const[s,setS]=useState({w:innerWidth,h:innerHeight});useEffect(()=>{const f=()=>setS({w:innerWidth,h:innerHeight});addEventListener('resize',f);return()=>removeEventListener('resize',f)},[]);return s};
     const deg=r=>r*180/Math.PI;
 
-    // === AJUSTE MOBILE: evitamos corte en bordes con menor radio y margen seguro ===
     function computeFanLayout(stageW,stageH,cardW,cardH,total=22,bp='desktop'){
-      const isMobile = bp==='mobile';
       const cx=stageW/2;
-
-      // Radio un poco menor en mobile para que entre completo
-      const r = isMobile ? stageW/2.65 : stageW/2.2;
-
+      const r=stageW/2.2;
       const phiCenter=3*Math.PI/2;
-      const span=isMobile?160*Math.PI/180:bp==='tablet'?190*Math.PI/180:210*Math.PI/180;
-
-      const N=isMobile?9:total;
+      const span=bp==='mobile'?160*Math.PI/180:bp==='tablet'?190*Math.PI/180:210*Math.PI/180;
+      const N=bp==='mobile'?9:total;
       const res=[];
-      // offset vertical: desktop/tablet = 20% del alto, mobile = 30% del alto (baja las cartas)
-      const baseY = (isMobile ? stageH*0.30 : stageH*0.20);
-
-      // Margen seguro en mobile para que ninguna carta toque el borde (≈ 0.6 ancho de carta)
-      const safeMargin = isMobile ? Math.max(8, cardW*0.6) : 0;
-
+      // offset vertical: desktop/tablet = 20% del alto, mobile = 28% del alto (baja las cartas)
+      const baseY = (bp==='mobile' ? stageH*0.28 : stageH*0.20);
       for(let i=0;i<N;i++){
         const t=N===1?.5:i/(N-1);
         const phi=phiCenter+span/2 - t*span;
-        let x=cx + r*Math.cos(phi);
+        const x=cx + r*Math.cos(phi);
         const y=baseY + r*Math.sin(phi);
         const rot=deg(phi)+90;
-
-        // Corrige horizontalmente si se sale del viewport en mobile
-        let left = x - cardW/2;
-        if(isMobile){
-          left = Math.min(Math.max(left, safeMargin), stageW - cardW - safeMargin);
-        }
-        res.push({left, top:y-cardH/2, rot});
+        res.push({left:x-cardW/2, top:y-cardH/2, rot});
       }
       return res;
     }
