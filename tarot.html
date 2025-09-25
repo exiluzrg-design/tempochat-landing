@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Tarot IA — BigFont + Sigil Blur (Tight)</title>
+  <title>Tarot IA — Movimientos Lentos</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
@@ -13,124 +13,239 @@
     html, body{height:100%;margin:0;background: radial-gradient(2000px 1400px at 50% 45%, #5f3bb8 0%, #3b1a77 45%, #1a083a 100%);color:#fff;overflow:hidden;}
     .screen{min-height:100vh;width:100vw;display:flex;align-items:center;justify-content:center;}
     .stage{width:min(1280px,95vw);height:min(720px,90vh);position:relative;overflow:hidden;background:transparent;}
+
     :root{ --card-w:128px; --card-h:204px; }
-    .card{position:absolute;width:var(--card-w);height:var(--card-h);border-radius:14px;overflow:hidden;
+    .card{
+      position:absolute; width:var(--card-w); height:var(--card-h);
+      border-radius:14px; overflow:hidden;
       border:1px solid rgba(231,195,114,.35);
       box-shadow:0 10px 25px rgba(0,0,0,.5), inset 0 0 0 1px #6d4ad140;
       transform-origin:50% 85%;
-      opacity:0;transform:translateY(110vh) rotate(0deg);
-      transition: transform .9s cubic-bezier(.2,.8,.2,1), opacity .9s cubic-bezier(.2,.8,.2,1), filter .35s ease;
-      will-change: transform, opacity;}
-    .card.show{opacity:1;}
+      opacity:0; transform:translateY(110vh) rotate(0deg);
+      /* más lento */
+      transition: transform 1.6s cubic-bezier(.2,.8,.2,1), opacity 1.6s cubic-bezier(.2,.8,.2,1), filter .5s ease;
+      will-change: transform, opacity, filter;
+    }
+    .card.show{ opacity:1; }
+
+    /* sheen una sola vez, más lento */
     .card.show::after{
-      content:"";position:absolute;inset:0;
+      content:""; position:absolute; inset:0;
       background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.28) 50%, transparent 65%);
       transform: translateX(-120%);
-      animation: sheen 2.8s ease-in-out 1;
-      mix-blend-mode: screen;pointer-events:none;
+      animation: sheen 5s ease-in-out 1;
+      mix-blend-mode: screen; pointer-events:none;
     }
-    @keyframes sheen{0%{transform:translateX(-120%);}100%{transform:translateX(120%);}}
-    .card svg{position:absolute;inset:0;width:100%;height:100%;display:block;}
+    @keyframes sheen{
+      0%   { transform: translateX(-120%); }
+      100% { transform: translateX(120%); }
+    }
+
+    .card svg{ position:absolute; inset:0; width:100%; height:100%; display:block; }
+
     @media (max-width:920px){ :root{ --card-w:110px; --card-h:192px; } }
     @media (max-width:640px){ :root{ --card-w:104px; --card-h:182px; } }
 
-    /* Ventana */
+    /* Ventana: transparencia total, tipografía mística */
     .soft-dialog{
-      position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-      width:min(800px, 90vw);padding:32px 36px;
-      border-radius:18px;background:transparent;border:none;box-shadow:none;
-      color:#f5ecff;font-family:'Cinzel Decorative',cursive;
-      font-size:clamp(26px,3vw,40px);line-height:1.5;text-align:center;z-index:20;
+      position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+      width:min(800px, 90vw); padding:32px 36px;
+      border-radius:18px; background:transparent; border:none; box-shadow:none;
+      color:#f5ecff; text-align:center; z-index:20;
+      font-family:'Cinzel Decorative', cursive;
+      font-size:clamp(26px,3vw,40px); line-height:1.5;
+      opacity:0;
     }
-    .soft-dialog .text{margin-top:14px;font-size:clamp(20px,2.4vw,28px);opacity:.95;}
+    .soft-dialog .text{ margin-top:14px; font-size:clamp(20px, 2.4vw, 28px); opacity:.95; }
 
-    /* Blur */
-    .stage.show-dialog .card{filter:blur(2px) brightness(.86);}
+    /* Aparición lenta de la ventana */
+    @keyframes dialogFade { 0%{opacity:0;} 100%{opacity:1;} }
+    .stage.show-dialog .soft-dialog{ animation: dialogFade 1.8s ease forwards; }
 
-    /* Sigil visuals */
-    .soft-dialog .sigil-wrap{display:flex;justify-content:center;margin-bottom:14px;}
-    .soft-dialog svg.sigil{width:min(360px,70vw);height:auto;display:block;}
-    .soft-dialog .gold{stroke:#e7c372;}
-    .soft-dialog .violet{stroke:#d9c8ff;opacity:.85;}
-    .soft-dialog .dot{fill:#e7c372;}
-    .soft-dialog .dash{stroke-dasharray:4 6;}
+    /* Blur de cartas cuando aparece la ventana (suave) */
+    .stage.show-dialog .card{ filter: blur(2px) brightness(.86); }
 
-    /* Sigil animations */
-    .soft-dialog svg.sigil{animation:float 6s ease-in-out infinite;}
-    @keyframes float{0%{transform:translateY(0);}50%{transform:translateY(-4px);}100%{transform:translateY(0);}}
-    .sigil .spin{transform-box:fill-box;transform-origin:50% 50%;animation:spin 12s linear infinite;}
-    .sigil .spin-rev{transform-box:fill-box;transform-origin:50% 50%;animation:spinReverse 16s linear infinite;}
-    @keyframes spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
-    @keyframes spinReverse{from{transform:rotate(0deg);}to{transform:rotate(-360deg);}}
-    .sigil .twinkle{animation:twinkle 1.8s ease-in-out infinite alternate;}
-    .sigil .tw1{animation-delay:.2s;}.sigil .tw2{animation-delay:.9s;}
-    @keyframes twinkle{0%{opacity:.35;}100%{opacity:1;}}
+    /* Sigilo (ojo) */
+    .soft-dialog .sigil-wrap{ display:flex; justify-content:center; margin-bottom:14px; }
+    .soft-dialog svg.sigil{ width:min(360px, 70vw); height:auto; display:block; }
+    .soft-dialog .gold{ stroke:#e7c372; }
+    .soft-dialog .violet{ stroke:#d9c8ff; opacity:.85; }
+    .soft-dialog .dot{ fill:#e7c372; }
+    .soft-dialog .dash{ stroke-dasharray:4 6; }
+
+    /* Animaciones más lentas del sigilo */
+    .soft-dialog svg.sigil{ animation: float 10s ease-in-out infinite; }
+    @keyframes float { 0%{ transform: translateY(0); } 50%{ transform: translateY(-4px); } 100%{ transform: translateY(0); } }
+    .sigil .spin{ transform-box: fill-box; transform-origin: 50% 50%; animation: spin 20s linear infinite; }
+    .sigil .spin-rev{ transform-box: fill-box; transform-origin: 50% 50%; animation: spinReverse 28s linear infinite; }
+    @keyframes spin { from{ transform: rotate(0deg); } to{ transform: rotate(360deg); } }
+    @keyframes spinReverse { from{ transform: rotate(0deg); } to{ transform: rotate(-360deg); } }
+    .sigil .twinkle{ animation: twinkle 3s ease-in-out infinite alternate; }
+    .sigil .tw1{ animation-delay: .3s; } .sigil .tw2{ animation-delay: 1.2s; }
+    @keyframes twinkle { 0%{ opacity: .35; } 100%{ opacity: 1; } }
   </style>
 </head>
 <body>
   <div class="screen"><div id="root"></div></div>
+
   <script type="text/babel" data-presets="react">
-    const {useEffect,useMemo,useRef,useState} = React;
-    const Back=()=>(
+    const { useEffect, useMemo, useRef, useState } = React;
+
+    const Back = () => (
       <svg viewBox="0 0 100 160" aria-hidden>
-        <defs><radialGradient id="g" cx="50%" cy="20%" r="80%">
-          <stop offset="0%" stopColor="#3a1e73"/><stop offset="65%" stopColor="#2a105a"/><stop offset="100%" stopColor="#160a34"/>
-        </radialGradient></defs>
+        <defs>
+          <radialGradient id="g" cx="50%" cy="20%" r="80%">
+            <stop offset="0%" stopColor="#3a1e73"/><stop offset="65%" stopColor="#2a105a"/><stop offset="100%" stopColor="#160a34"/>
+          </radialGradient>
+        </defs>
         <rect x="0" y="0" width="100" height="160" rx="10" fill="url(#g)"/>
-      </svg>);
-    const CardBack=()=> (<div className="absolute inset-0 rounded-xl overflow-hidden" style={{border:'1px solid #e7c37255'}}><Back/></div>);
-    const useWindowSize=()=>{const[s,setS]=useState({w:innerWidth,h:innerHeight});useEffect(()=>{const f=()=>setS({w:innerWidth,h:innerHeight});addEventListener('resize',f);return()=>removeEventListener('resize',f);},[]);return s;};
-    const deg=r=>r*180/Math.PI;
+      </svg>
+    );
+    const CardBack = () => (
+      <div className="absolute inset-0 rounded-xl overflow-hidden" style={{border:'1px solid #e7c37255'}}>
+        <Back/>
+      </div>
+    );
+
+    const useWindowSize = () => {
+      const [s,setS]=useState({w: innerWidth, h: innerHeight});
+      useEffect(()=>{ const f=()=> setS({w: innerWidth, h: innerHeight}); addEventListener('resize', f); return ()=> removeEventListener('resize', f); },[]);
+      return s;
+    };
+    const deg = r => r * 180 / Math.PI;
+
+    /* Mantengo la separación (apertura) previa: desktop 180°, tablet 150°, mobile 120° */
     function computeFanLayout(stageW, stageH, cardW, cardH, total=22, bp='desktop'){
-      const cx=stageW/2;const r=stageW/2.2;const cy=stageH*0.32+r;
-      const spanDeg = bp==='mobile'?120: bp==='tablet'?150:180; // <-- menos separación
-      const span=spanDeg*Math.PI/180;
-      const phiCenter=3*Math.PI/2;const N=bp==='mobile'?9:total;const res=[];
-      for(let i=0;i<N;i++){const t=i/(N-1);const phi=phiCenter+span/2-t*span;
-        const x=cx+r*Math.cos(phi);const y=cy+r*Math.sin(phi);
-        res.push({left:x-cardW/2,top:y-cardH/2,rot:deg(phi)+90});}
+      const cx=stageW/2; const r=stageW/2.2; const cy=stageH*0.32 + r;
+      const spanDeg = bp==='mobile'?120 : bp==='tablet'?150 : 180;   // <— misma separación
+      const span = spanDeg * Math.PI/180;
+      const phiCenter = 3*Math.PI/2;
+      const N = bp==='mobile' ? 9 : total;
+      const res=[];
+      for(let i=0;i<N;i++){
+        const t = i/(N-1);
+        const phi = phiCenter + span/2 - t*span;
+        const x = cx + r*Math.cos(phi);
+        const y = cy + r*Math.sin(phi);
+        res.push({left:x-cardW/2, top:y-cardH/2, rot:deg(phi)+90});
+      }
       return res;
     }
+
     function TarotFan(){
-      const stageRef=useRef(null);const {w:vw,h:vh}=useWindowSize();const[run,setRun]=useState(0);const[showDialog,setShowDialog]=useState(false);
-      const readVars=()=>{const cs=getComputedStyle(document.documentElement);return{w:parseFloat(cs.getPropertyValue('--card-w')),h:parseFloat(cs.getPropertyValue('--card-h'))};};
-      const[cardVars,setCardVars]=useState(readVars());useEffect(()=>{setCardVars(readVars());},[vw,vh]);
-      const getStage=()=>{const el=stageRef.current;if(!el)return{stageW:1280,stageH:720};const r=el.getBoundingClientRect();return{stageW:r.width,stageH:r.height};};
-      const{stageW,stageH}=useMemo(getStage,[stageRef.current,vw,vh,run]);const bp=stageW<640?'mobile':stageW<920?'tablet':'desktop';
-      const layout=useMemo(()=>computeFanLayout(stageW,stageH,cardVars.w,cardVars.h,22,bp),[stageW,stageH,cardVars.w,cardVars.h,bp]);
+      const stageRef=useRef(null);
+      const {w:vw,h:vh}=useWindowSize();
+      const [run,setRun]=useState(0);
+      const [showDialog,setShowDialog]=useState(false);
+
+      const readVars = () => {
+        const cs = getComputedStyle(document.documentElement);
+        return {
+          w: parseFloat(cs.getPropertyValue('--card-w')),
+          h: parseFloat(cs.getPropertyValue('--card-h')),
+        };
+      };
+      const [cardVars,setCardVars]=useState(readVars());
+      useEffect(()=>{ setCardVars(readVars()); }, [vw,vh]);
+
+      const getStage = ()=>{
+        const el=stageRef.current;
+        if(!el) return {stageW:1280, stageH:720};
+        const r=el.getBoundingClientRect();
+        return {stageW:r.width, stageH:r.height};
+      };
+      const {stageW,stageH}=useMemo(getStage, [stageRef.current, vw, vh, run]);
+      const bp = stageW < 640 ? 'mobile' : stageW < 920 ? 'tablet' : 'desktop';
+
+      const layout = useMemo(
+        ()=>computeFanLayout(stageW, stageH, cardVars.w, cardVars.h, 22, bp),
+        [stageW, stageH, cardVars.w, cardVars.h, bp]
+      );
+
       const refs=useRef([]);
-      useEffect(()=>{refs.current.forEach((el,i)=>{if(!el)return;el.classList.remove('show');const{left,top,rot}=layout[i];el.style.left=left+'px';el.style.top=top+'px';el.style.transform=`translateY(110vh) rotate(${rot-25}deg)`;});
-        requestAnimationFrame(()=>{refs.current.forEach(el=>{if(el)el.getBoundingClientRect();});requestAnimationFrame(()=>{refs.current.forEach((el,i)=>{if(!el)return;const{rot}=layout[i];setTimeout(()=>{el.classList.add('show');el.style.transform=`translateY(0) rotate(${rot}deg)`;},i*85);});});});},[layout,run]);
-      useEffect(()=>{setShowDialog(false);const N=layout.length;const stagger=85;const animDur=900;const delay=(N-1)*stagger+animDur+600;const t=setTimeout(()=>setShowDialog(true),delay);return()=>clearTimeout(t);},[layout,run]);
-      useEffect(()=>{const handler=()=>setRun(v=>v+1);document.addEventListener('click',handler);return()=>document.removeEventListener('click',handler);},[]);
-      return(<div ref={stageRef} className={`stage ${showDialog?"show-dialog":""}`}>
-        {layout.map((pos,i)=>(<div key={i+'-'+run} ref={el=>refs.current[i]=el} className="card" style={{left:pos.left,top:pos.top,transform:`rotate(${pos.rot}deg)`}}><CardBack/></div>))}
-        {showDialog&&(<div className="soft-dialog">
-          <div className="sigil-wrap">
-            <svg className="sigil" viewBox="0 0 220 110" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-              <path className="violet" strokeWidth="1.2" d="M5 55 C35 15, 85 5, 110 5 C135 5, 185 15, 215 55 C185 95, 135 105, 110 105 C85 105, 35 95, 5 55 Z"/>
-              <circle className="gold" strokeWidth="1.4" cx="32" cy="55" r="10"/>
-              <circle className="gold" strokeWidth="1.4" cx="188" cy="55" r="10"/>
-              <line className="gold" strokeWidth="1.1" x1="42" y1="55" x2="178" y2="55"/>
-              <circle className="violet" strokeWidth="1" cx="110" cy="55" r="26"/>
-              <circle className="gold dash spin" strokeWidth="1" cx="110" cy="55" r="22"/>
-              <polygon className="gold spin-rev" strokeWidth="1.6" fill="none" points="110,35 118,49 134,52 121,63 124,79 110,71 96,79 99,63 86,52 102,49"/>
-              <line className="violet" strokeWidth="1" x1="110" y1="30" x2="110" y2="80"/>
-              <line className="violet" strokeWidth="1" x1="80" y1="55" x2="140" y2="55"/>
-              <circle className="dot" cx="8" cy="55" r="2.2"/>
-              <circle className="dot" cx="212" cy="55" r="2.2"/>
-              <g className="gold" strokeWidth="1">
-                <path className="twinkle tw1" d="M28 22 l3 6 l6 3 l-6 3 l-3 6 l-3 -6 l-6 -3 l6 -3 z"/>
-                <path className="twinkle tw2" d="M192 20 l2 4 l4 2 l-4 2 l-2 4 l-2 -4 l-4 -2 l4 -2 z"/>
-              </g>
-            </svg>
-          </div>
-          <div>Bienvenido/a al Oráculo</div>
-          <div className="text">Formula tu pregunta y deja que el tarot ilumine tu camino.</div>
-        </div>)}
-      </div>);
+
+      /* Entrada más lenta: stagger y duración mayores */
+      useEffect(()=>{
+        refs.current.forEach((el,i)=>{
+          if(!el) return;
+          el.classList.remove('show');
+          const {left, top, rot}=layout[i];
+          el.style.left = left+'px';
+          el.style.top  = top +'px';
+          el.style.transform = `translateY(110vh) rotate(${rot-25}deg)`;
+        });
+        requestAnimationFrame(()=>{
+          refs.current.forEach(el=>{ if(el) el.getBoundingClientRect(); });
+          requestAnimationFrame(()=>{
+            refs.current.forEach((el,i)=>{
+              if(!el) return;
+              const {rot}=layout[i];
+              setTimeout(()=>{
+                el.classList.add('show');
+                el.style.transform = `translateY(0) rotate(${rot}deg)`;
+              }, i*160); // antes 85ms — ahora más lento
+            });
+          });
+        });
+      }, [layout, run]);
+
+      /* Mostrar ventana luego de TODAS las cartas — delay acorde a la nueva velocidad */
+      useEffect(()=>{
+        setShowDialog(false);
+        const N = layout.length;
+        const stagger = 160;   // antes 85
+        const animDur = 1600;  // ms; empata transition de .card
+        const delay = (N-1)*stagger + animDur + 1000; // colchón más amplio
+        const t = setTimeout(()=> setShowDialog(true), delay);
+        return ()=> clearTimeout(t);
+      }, [layout, run]);
+
+      useEffect(()=>{
+        const handler=()=> setRun(v=>v+1);
+        document.addEventListener('click', handler);
+        return ()=> document.removeEventListener('click', handler);
+      }, []);
+
+      return (
+        <div ref={stageRef} className={`stage ${showDialog ? "show-dialog" : ""}`}>
+          {layout.map((pos,i)=>(
+            <div key={i+'-'+run} ref={el=>refs.current[i]=el} className="card" style={{left:pos.left, top:pos.top, transform:`rotate(${pos.rot}deg)`}}>
+              <CardBack/>
+            </div>
+          ))}
+
+          {showDialog && (
+            <div className="soft-dialog">
+              <div className="sigil-wrap">
+                <svg className="sigil" viewBox="0 0 220 110" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                  <path className="violet" strokeWidth="1.2" d="M5 55 C35 15, 85 5, 110 5 C135 5, 185 15, 215 55 C185 95, 135 105, 110 105 C85 105, 35 95, 5 55 Z"/>
+                  <circle className="gold" strokeWidth="1.4" cx="32" cy="55" r="10"/>
+                  <circle className="gold" strokeWidth="1.4" cx="188" cy="55" r="10"/>
+                  <line className="gold" strokeWidth="1.1" x1="42" y1="55" x2="178" y2="55"/>
+                  <circle className="violet" strokeWidth="1" cx="110" cy="55" r="26"/>
+                  <circle className="gold dash spin" strokeWidth="1" cx="110" cy="55" r="22"/>
+                  <polygon className="gold spin-rev" strokeWidth="1.6" fill="none"
+                    points="110,35 118,49 134,52 121,63 124,79 110,71 96,79 99,63 86,52 102,49"/>
+                  <line className="violet" strokeWidth="1" x1="110" y1="30" x2="110" y2="80"/>
+                  <line className="violet" strokeWidth="1" x1="80" y1="55" x2="140" y2="55"/>
+                  <circle className="dot" cx="8" cy="55" r="2.2"/>
+                  <circle className="dot" cx="212" cy="55" r="2.2"/>
+                  <g className="gold" strokeWidth="1">
+                    <path className="twinkle tw1" d="M28 22 l3 6 l6 3 l-6 3 l-3 6 l-3 -6 l-6 -3 l6 -3 z"/>
+                    <path className="twinkle tw2" d="M192 20 l2 4 l4 2 l-4 2 l-2 4 l-2 -4 l-4 -2 l4 -2 z"/>
+                  </g>
+                </svg>
+              </div>
+              <div>Bienvenido/a al Oráculo</div>
+              <div className="text">Formula tu pregunta y deja que el tarot ilumine tu camino.</div>
+            </div>
+          )}
+        </div>
+      );
     }
-    const root=ReactDOM.createRoot(document.getElementById('root'));root.render(<TarotFan/>);
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<TarotFan/>);
   </script>
 </body>
 </html>
