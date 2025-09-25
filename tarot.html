@@ -3,12 +3,11 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Tarot IA — Secuencia OK + Chat Ajustado</title>
+  <title>Tarot IA — Secuencia OK + Chat Ajustado (Fix)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <!-- Tipografías menos “místicas”: títulos con Marcellus, texto/UI con Inter -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Marcellus&display=swap" rel="stylesheet">
   <style>
     html, body{
@@ -45,7 +44,7 @@
     @media (max-width:920px){ :root{ --card-w:110px; --card-h:192px; } }
     @media (max-width:640px){ :root{ --card-w:104px; --card-h:182px; } }
 
-    /* Ventana mística (intro) */
+    /* Ventana de bienvenida */
     .soft-dialog{
       position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
       width:min(800px, 90vw); padding:32px 36px;
@@ -65,39 +64,20 @@
     .stage.show-dialog .card,
     .stage.show-chat .card{ filter: blur(2px) brightness(.86); }
 
-    /* Sigilo (ojo) */
-    .soft-dialog .sigil-wrap{ display:flex; justify-content:center; margin-bottom:14px; }
-    .soft-dialog svg.sigil{ width:min(360px, 70vw); height:auto; display:block; }
-    .soft-dialog .gold{ stroke:#e7c372; }
-    .soft-dialog .violet{ stroke:#d9c8ff; opacity:.85; }
-    .soft-dialog .dot{ fill:#e7c372; }
-    .soft-dialog .dash{ stroke-dasharray:4 6; }
-    .soft-dialog svg.sigil{ animation: float 10s ease-in-out infinite; }
-    @keyframes float { 0%{ transform: translateY(0); } 50%{ transform: translateY(-4px); } 100%{ transform: translateY(0); } }
-    .sigil .spin{ transform-box: fill-box; transform-origin: 50% 50%; animation: spin 20s linear infinite; }
-    .sigil .spin-rev{ transform-box: fill-box; transform-origin: 50% 50%; animation: spinReverse 28s linear infinite; }
-    @keyframes spin { from{ transform: rotate(0deg); } to{ transform: rotate(360deg); } }
-    @keyframes spinReverse { from{ transform: rotate(0deg); } to{ transform: rotate(-360deg); } }
-    .sigil .twinkle{ animation: twinkle 3s ease-in-out infinite alternate; }
-    .sigil .tw1{ animation-delay: .3s; } .sigil .tw2{ animation-delay: 1.2s; }
-    @keyframes twinkle { 0%{ opacity: .35; } 100%{ opacity: 1; } }
-
-    /* Chat (interior de la U) — Desktop más angosto, Mobile protagonista */
+    /* Chat */
     .chat-wrap{
       position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
-      width:min(520px, 46vw); /* desktop más angosto */
+      width:min(520px, 46vw);
       z-index:22; opacity:0;
       animation: chatIn .8s ease forwards;
       font-family:'Inter', sans-serif;
     }
-    /* Tablet */
     @media (max-width:920px){ .chat-wrap{ width:min(720px, 78vw); } }
-    /* Mobile protagonista */
     @media (max-width:640px){
       .chat-wrap{ width:96vw; }
       .chat-pane{ padding:22px; }
       .messages{ max-height:min(64vh, 560px); font-size:18px; }
-      .input-row{ grid-template-columns: 1fr; gap:10px; } /* textarea arriba, botón abajo */
+      .input-row{ grid-template-columns: 1fr; gap:10px; }
       .input-row button{ width:100%; height:56px; font-size:18px; }
       .input-row textarea{ height:88px; font-size:18px; }
     }
@@ -106,12 +86,9 @@
     .chat-pane{
       background: radial-gradient(120% 160% at 50% 0%, rgba(44,21,93,.4) 0%, rgba(22,10,48,.32) 60%, rgba(12,5,28,.26) 100%);
       border:1px solid rgba(231,195,114,.35);
-      box-shadow: 0 10px 30px rgba(0,0,0,.35), inset 0 0 0 1px rgba(109,74,209,.2);
       border-radius:16px; padding:16px;
-      backdrop-filter: blur(4px);
       box-sizing: border-box;
     }
-    /* Aseguramos que “Escribí tu pregunta” ocupe EXACTAMENTE el mismo ancho que el área superior */
     .messages, .input-row{ width:100%; box-sizing:border-box; }
 
     .messages{
@@ -131,11 +108,10 @@
     .bubble.bot{ align-self:flex-start; }
     .bubble.user{ align-self:flex-end; background: rgba(109,74,209,.35); }
 
-    /* INPUT: misma anchura que arriba — usamos grid para ocupar 100% y botón al lado en desktop */
     .input-row{
       margin-top:12px;
       display:grid;
-      grid-template-columns: 1fr auto;  /* textarea ocupa todo, botón al costado */
+      grid-template-columns: 1fr auto;
       gap:10px; align-items:center;
     }
     .input-row textarea{
@@ -148,8 +124,7 @@
     }
     .input-row button{
       height:56px; padding:0 18px; border-radius:12px; border:1px solid rgba(231,195,114,.45);
-      background: rgba(231,195,114,.14); color:#f9f0ff; font-weight:600; letter-spacing:.2px;
-      box-shadow: inset 0 0 0 1px rgba(109,74,209,.22);
+      background: rgba(231,195,114,.14); color:#f9f0ff; font-weight:600;
       cursor:pointer; transition: transform .15s ease, background .2s ease;
       font-family:'Inter', sans-serif;
     }
@@ -172,6 +147,7 @@
         <rect x="0" y="0" width="100" height="160" rx="10" fill="url(#g)"/>
       </svg>
     );
+
     const CardBack = () => (
       <div className="absolute inset-0 rounded-xl overflow-hidden" style={{border:'1px solid #e7c37255'}}>
         <Back/>
@@ -179,33 +155,28 @@
     );
 
     const useWindowSize = () => {
-      const [s,setS]=useState({w: innerWidth, h: innerHeight});
-      useEffect(()=>{ const f=()=> setS({w: innerWidth, h: innerHeight}); addEventListener('resize', f); return ()=> removeEventListener('resize', f); },[]);
+      const [s,setS]=React.useState({w: innerWidth, h: innerHeight});
+      React.useEffect(()=>{ const f=()=> setS({w: innerWidth, h: innerHeight}); addEventListener('resize', f); return ()=> removeEventListener('resize', f); },[]);
       return s;
     };
     const deg = r => r * 180 / Math.PI;
 
-    /* U invertida: cartas abrazando bordes, separación ya aprobada */
     function computeFanLayout(stageW, stageH, cardW, cardH, total=22, bp='desktop'){
       const padX = Math.max(6, cardW*0.08);
       const padTop = Math.max(8, cardH*0.18);
       const padBottom = Math.max(12, cardH*0.22);
-
       const cx = stageW / 2;
       const spanDeg = bp==='mobile'?120 : bp==='tablet'?150 : 180;
       const span = spanDeg * Math.PI/180;
       const phiCenter = 3*Math.PI/2;
       const N = bp==='mobile' ? 9 : total;
-
       const rMaxW = (stageW/2) - padX - cardW/2;
       const rMaxH = ((stageH - padTop - padBottom) / 2);
       const r = Math.max(Math.min(rMaxW, rMaxH), cardH*1.1);
-
       const cyTarget = stageH*0.30 + r;
       const cyMin = padTop + cardH/2 + r;
       const cyMax = stageH - padBottom - cardH/2 - r;
       const cy = Math.max(cyMin, Math.min(cyTarget, cyMax));
-
       const res=[];
       for(let i=0;i<N;i++){
         const t = i/(N-1);
@@ -218,40 +189,27 @@
     }
 
     function TarotFan(){
-      const stageRef=useRef(null);
+      const stageRef=React.useRef(null);
       const {w:vw,h:vh}=useWindowSize();
-      const [run,setRun]=useState(0);
-
-      // SECUENCIA: cartas -> intro (sigilo/texto) -> chat
-      const [showDialog,setShowDialog]=useState(false);
-      const [dialogFadeOut,setDialogFadeOut]=useState(false);
-      const [showChat,setShowChat]=useState(false);
+      const [run,setRun]=React.useState(0);
+      const [showDialog,setShowDialog]=React.useState(false);
+      const [dialogFadeOut,setDialogFadeOut]=React.useState(false);
+      const [showChat,setShowChat]=React.useState(false);
 
       const readVars = () => {
         const cs = getComputedStyle(document.documentElement);
         return { w: parseFloat(cs.getPropertyValue('--card-w')), h: parseFloat(cs.getPropertyValue('--card-h')) };
       };
-      const [cardVars,setCardVars]=useState(readVars());
-      useEffect(()=>{ setCardVars(readVars()); }, [vw,vh]);
+      const [cardVars,setCardVars]=React.useState(readVars());
+      React.useEffect(()=>{ setCardVars(readVars()); }, [vw,vh]);
 
-      const getStage = ()=>{
-        const el=stageRef.current;
-        if(!el) return {stageW:1280, stageH:720};
-        const r=el.getBoundingClientRect();
-        return {stageW:r.width, stageH:r.height};
-      };
-      const {stageW,stageH}=useMemo(getStage, [stageRef.current, vw, vh, run]);
+      const getStage = ()=> stageRef.current?.getBoundingClientRect() || {width:1280,height:720};
+      const {width:stageW,height:stageH}=getStage();
       const bp = stageW < 640 ? 'mobile' : stageW < 920 ? 'tablet' : 'desktop';
+      const layout = React.useMemo(()=>computeFanLayout(stageW, stageH, cardVars.w, cardVars.h, 22, bp),[stageW, stageH, cardVars]);
 
-      const layout = useMemo(
-        ()=>computeFanLayout(stageW, stageH, cardVars.w, cardVars.h, 22, bp),
-        [stageW, stageH, cardVars.w, cardVars.h, bp]
-      );
-
-      const refs=useRef([]);
-
-      // Entrada lenta de cartas
-      useEffect(()=>{
+      const refs=React.useRef([]);
+      React.useEffect(()=>{
         refs.current.forEach((el,i)=>{
           if(!el) return;
           el.classList.remove('show');
@@ -261,7 +219,6 @@
           el.style.transform = `translateY(110vh) rotate(${rot-25}deg)`;
         });
         requestAnimationFrame(()=>{
-          refs.current.forEach(el=>{ if(el) el.getBoundingClientRect(); });
           requestAnimationFrame(()=>{
             refs.current.forEach((el,i)=>{
               if(!el) return;
@@ -275,33 +232,21 @@
         });
       }, [layout, run]);
 
-      // Mostrar intro al finalizar cartas
-      useEffect(()=>{
-        setShowDialog(false);
-        setDialogFadeOut(false);
-        setShowChat(false);
-        const N = layout.length;
-        const stagger = 160;
-        const animDur = 1600;
-        const delay = (N-1)*stagger + animDur + 1000;
+      React.useEffect(()=>{
+        setShowDialog(false); setDialogFadeOut(false); setShowChat(false);
+        const delay = (layout.length-1)*160 + 1600 + 1000;
         const t = setTimeout(()=> setShowDialog(true), delay);
         return ()=> clearTimeout(t);
       }, [layout, run]);
 
-      // 2s después, fade-out del intro y aparece el chat
-      useEffect(()=>{
+      React.useEffect(()=>{
         if(!showDialog) return;
         const t1 = setTimeout(()=> setDialogFadeOut(true), 2000);
-        const t2 = setTimeout(()=>{
-          setShowDialog(false);
-          setDialogFadeOut(false);
-          setShowChat(true);
-        }, 2600); // 600ms de fade-out
+        const t2 = setTimeout(()=>{ setShowDialog(false); setDialogFadeOut(false); setShowChat(true); }, 2600);
         return ()=> { clearTimeout(t1); clearTimeout(t2); };
       }, [showDialog]);
 
-      // Click para re-correr la secuencia
-      useEffect(()=>{
+      React.useEffect(()=>{
         const handler=()=> setRun(v=>v+1);
         document.addEventListener('click', handler);
         return ()=> document.removeEventListener('click', handler);
@@ -314,32 +259,12 @@
               <CardBack/>
             </div>
           ))}
-
-          {/* Intro mística (ojo + texto) con tipografía más neutra */}
           {showDialog && (
             <div className={`soft-dialog ${dialogFadeOut ? "fade-out" : ""}`}>
-              <div className="sigil-wrap">
-                <svg className="sigil" viewBox="0 0 220 110" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-                  <path className="violet" strokeWidth="1.2" d="M5 55 C35 15, 85 5, 110 5 C135 5, 185 15, 215 55 C185 95, 135 105, 110 105 C85 105, 35 95, 5 55 Z"/>
-                  <circle className="gold" strokeWidth="1.4" cx="32" cy="55" r="10"/>
-                  <circle className="gold" strokeWidth="1.4" cx="188" cy="55" r="10"/>
-                  <line className="gold" strokeWidth="1.1" x1="42" y1="55" x2="178" y2="55"/>
-                  <circle className="violet" strokeWidth="1" cx="110" cy="55" r="26"/>
-                  <circle className="gold dash spin" strokeWidth="1" cx="110" cy="55" r="22"/>
-                  <polygon className="gold spin-rev" strokeWidth="1.6" fill="none"
-                    points="110,35 118,49 134,52 121,63 124,79 110,71 96,79 99,63 86,52 102,49"/>
-                  <line className="violet" strokeWidth="1" x1="110" y1="30" x2="110" y2="80"/>
-                  <line className="violet" strokeWidth="1" x1="80" y1="55" x2="140" y2="55"/>
-                  <circle className="dot" cx="8" cy="55" r="2.2"/>
-                  <circle className="dot" cx="212" cy="55" r="2.2"/>
-                </svg>
-              </div>
-              <div style="font-family:'Marcellus', serif;">Bienvenido/a al Oráculo</div>
+              <div>Bienvenido/a al Oráculo</div>
               <div className="text">Formulá tu pregunta y dejá que el tarot ilumine tu camino.</div>
             </div>
           )}
-
-          {/* Chat */}
           {showChat && (
             <div className="chat-wrap">
               <div className="chat-pane">
@@ -347,7 +272,6 @@
                   <div className="bubble bot">✨ El oráculo te escucha. ¿Qué inquietud querés revelar hoy?</div>
                 </div>
                 <div className="input-row">
-                  <!-- El textarea ocupa el 100% de la columna disponible; mismo ancho que arriba -->
                   <textarea id="input" placeholder="Escribí tu pregunta aquí..."></textarea>
                   <button onClick={()=>{
                     const ta=document.getElementById('input');
@@ -357,13 +281,7 @@
                     const u=document.createElement('div');
                     u.className='bubble user'; u.textContent=txt; box.appendChild(u);
                     ta.value='';
-                    setTimeout(()=>{
-                      const b=document.createElement('div');
-                      b.className='bubble bot';
-                      b.textContent='🔮 La rueda gira… pronto habrá señales.';
-                      box.appendChild(b);
-                      box.scrollTop=box.scrollHeight;
-                    }, 800);
+                    setTimeout(()=>{ const b=document.createElement('div'); b.className='bubble bot'; b.textContent='🔮 La rueda gira… pronto habrá señales.'; box.appendChild(b); box.scrollTop=box.scrollHeight; }, 800);
                     box.scrollTop=box.scrollHeight;
                   }}>Enviar</button>
                 </div>
